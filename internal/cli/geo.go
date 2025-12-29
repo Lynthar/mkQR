@@ -22,7 +22,7 @@ When scanned, this will open the location in a maps application.
 
 Examples:
   mkqr geo --lat 40.7128 --lng -74.0060
-  mkqr geo --lat 39.9042 --lng 116.4074 -q "Beijing"
+  mkqr geo --lat 39.9042 --lng 116.4074 --query "Beijing"
   mkqr geo --lat 31.2304 --lng 121.4737 --query "Shanghai Tower"`,
 	RunE: runGeo,
 }
@@ -30,7 +30,7 @@ Examples:
 func init() {
 	geoCmd.Flags().Float64Var(&geoLat, "lat", 0, "Latitude [required]")
 	geoCmd.Flags().Float64Var(&geoLng, "lng", 0, "Longitude [required]")
-	geoCmd.Flags().StringVarP(&geoQuery, "query", "q", "", "Location name/query")
+	geoCmd.Flags().StringVar(&geoQuery, "query", "", "Location name/query")
 
 	geoCmd.MarkFlagRequired("lat")
 	geoCmd.MarkFlagRequired("lng")

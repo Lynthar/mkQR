@@ -28,15 +28,15 @@ var vcardCmd = &cobra.Command{
 This can be scanned to add a contact to your phone's address book.
 
 Examples:
-  mkqr vcard -f "John" -l "Doe" -p "+1234567890"
+  mkqr vcard -f "John" --last "Doe" -p "+1234567890"
   mkqr vcard --first "Jane" --last "Smith" --email "jane@example.com" --org "Acme Inc"
-  mkqr vcard -f "张" -l "三" -m "+8613812345678" --org "公司名"`,
+  mkqr vcard -f "张" --last "三" -m "+8613812345678" --org "公司名"`,
 	RunE: runVCard,
 }
 
 func init() {
 	vcardCmd.Flags().StringVarP(&vcardFirstName, "first", "f", "", "First name")
-	vcardCmd.Flags().StringVarP(&vcardLastName, "last", "l", "", "Last name")
+	vcardCmd.Flags().StringVar(&vcardLastName, "last", "", "Last name")
 	vcardCmd.Flags().StringVarP(&vcardOrg, "org", "O", "", "Organization")
 	vcardCmd.Flags().StringVarP(&vcardTitle, "title", "t", "", "Job title")
 	vcardCmd.Flags().StringVarP(&vcardPhone, "phone", "p", "", "Phone number")
