@@ -107,6 +107,11 @@ func runRoot(cmd *cobra.Command, args []string) error {
 
 // generateQR is the common QR generation logic
 func generateQR(content string) error {
+	// Validate size
+	if outputSize <= 0 {
+		return fmt.Errorf("size must be a positive number, got %d", outputSize)
+	}
+
 	level, err := qr.ParseLevel(errorLevel)
 	if err != nil {
 		return err

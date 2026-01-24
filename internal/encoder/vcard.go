@@ -31,7 +31,17 @@ func (v *VCard) Encode() string {
 	// Name
 	if v.FirstName != "" || v.LastName != "" {
 		b.WriteString(fmt.Sprintf("N:%s;%s;;;\n", escapeVCard(v.LastName), escapeVCard(v.FirstName)))
-		b.WriteString(fmt.Sprintf("FN:%s %s\n", escapeVCard(v.FirstName), escapeVCard(v.LastName)))
+		// Build FN (formatted name) properly to avoid extra spaces
+		var fn string
+		switch {
+		case v.FirstName != "" && v.LastName != "":
+			fn = v.FirstName + " " + v.LastName
+		case v.FirstName != "":
+			fn = v.FirstName
+		default:
+			fn = v.LastName
+		}
+		b.WriteString(fmt.Sprintf("FN:%s\n", escapeVCard(fn)))
 	}
 
 	// Organization

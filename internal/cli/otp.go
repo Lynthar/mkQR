@@ -51,6 +51,27 @@ func init() {
 }
 
 func runOTP(cmd *cobra.Command, args []string) error {
+	// Validate secret is valid base32
+	if err := encoder.ValidateSecret(otpSecret); err != nil {
+		return fmt.Errorf("invalid secret: %w", err)
+	}
+
+	// Validate digits
+	if otpDigits != 6 && otpDigits != 8 {
+		return fmt.Errorf("digits must be 6 or 8, got %d", otpDigits)
+	}
+
+	// Validate period
+	if otpPeriod <= 0 {
+		return fmt.Errorf("period must be a positive number, got %d", otpPeriod)
+	}
+
+	// Validate algorithm
+	validAlgorithms := map[string]bool{"SHA1": true, "SHA256": true, "SHA512": true}
+	if !validAlgorithms[otpAlgorithm] {
+		return fmt.Errorf("algorithm must be SHA1, SHA256, or SHA512, got %s", otpAlgorithm)
+	}
+
 	otpType := encoder.TOTP
 	if otpTypeHOTP {
 		otpType = encoder.HOTP

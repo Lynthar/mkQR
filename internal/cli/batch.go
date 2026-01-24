@@ -37,13 +37,20 @@ Examples:
 func init() {
 	batchCmd.Flags().StringVarP(&batchOutputDir, "output-dir", "O", ".", "Output directory")
 	batchCmd.Flags().StringVar(&batchPrefix, "prefix", "qr_", "Filename prefix")
-	batchCmd.Flags().StringVar(&batchFormat, "format", "png", "Output format (png)")
+	// Note: currently only PNG is supported, flag hidden to avoid confusion
+	batchCmd.Flags().StringVar(&batchFormat, "format", "png", "Output format")
+	batchCmd.Flags().MarkHidden("format")
 
 	rootCmd.AddCommand(batchCmd)
 }
 
 func runBatch(cmd *cobra.Command, args []string) error {
 	inputFile := args[0]
+
+	// Validate size
+	if outputSize <= 0 {
+		return fmt.Errorf("size must be a positive number, got %d", outputSize)
+	}
 
 	// Create output directory
 	if err := os.MkdirAll(batchOutputDir, 0755); err != nil {

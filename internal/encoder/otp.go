@@ -3,6 +3,7 @@ package encoder
 import (
 	"fmt"
 	"net/url"
+	"regexp"
 	"strings"
 )
 
@@ -24,6 +25,22 @@ type OTP struct {
 	Digits    int    // 6 or 8 (default: 6)
 	Period    int    // For TOTP: seconds (default: 30)
 	Counter   int    // For HOTP: initial counter value
+}
+
+// base32Pattern matches valid base32 characters (A-Z and 2-7, case insensitive)
+var base32Pattern = regexp.MustCompile(`^[A-Za-z2-7]+=*$`)
+
+// ValidateSecret checks if the secret is a valid base32 string
+func ValidateSecret(secret string) error {
+	// Remove spaces and hyphens (common in user-provided secrets)
+	cleaned := strings.ReplaceAll(strings.ReplaceAll(secret, " ", ""), "-", "")
+	if cleaned == "" {
+		return fmt.Errorf("secret cannot be empty")
+	}
+	if !base32Pattern.MatchString(cleaned) {
+		return fmt.Errorf("secret must be a valid base32 string (A-Z, 2-7)")
+	}
+	return nil
 }
 
 // Encode returns the otpauth:// URL
