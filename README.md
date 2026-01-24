@@ -115,6 +115,17 @@ mkqr "text" -o qr.png --size 512 --level H
 mkqr "text" -q
 ```
 
+### Output Formats
+
+| Method | Format | Location |
+|--------|--------|----------|
+| `mkqr "text"` | Unicode characters | Terminal (stdout) |
+| `mkqr "text" -o file.png` | PNG image | Specified file path |
+| `mkqr batch file.txt -O ./dir/` | PNG images | Specified directory |
+
+- **Terminal output**: Uses Unicode block characters (██, ▀, ▄) for display, no file created
+- **PNG output**: Standard PNG image, default size 256x256 pixels (adjustable with `--size`)
+
 ## Supported Types
 
 | Type | Command | Example |
@@ -158,6 +169,59 @@ make cross
 
 # Run tests
 make test
+```
+
+## Offline Usage
+
+mkQR works completely offline - no network connection required at runtime. All QR code generation is done locally.
+
+### Option 1: Copy Pre-built Binary (Recommended)
+
+On a computer with internet access:
+
+```bash
+git clone https://github.com/Lynthar/mkQR.git
+cd mkQR
+
+# Build for current platform
+make build
+
+# Or cross-compile for multiple platforms
+make cross
+```
+
+This creates binaries in the `build/` directory:
+
+```
+build/
+├── mkqr-linux-amd64
+├── mkqr-linux-arm64
+├── mkqr-darwin-amd64
+├── mkqr-darwin-arm64
+└── mkqr-windows-amd64.exe
+```
+
+Copy the appropriate binary to the offline computer via USB drive or other media. The binary is self-contained with no external dependencies.
+
+### Option 2: Copy Source with Dependencies
+
+If you need to compile on the offline computer:
+
+On a computer with internet access:
+
+```bash
+git clone https://github.com/Lynthar/mkQR.git
+cd mkQR
+
+# Download dependencies into vendor directory
+go mod vendor
+```
+
+Copy the entire project directory (including `vendor/`) to the offline computer, then build:
+
+```bash
+cd mkQR
+go build -mod=vendor -o mkqr ./cmd/mkqr
 ```
 
 ## License
