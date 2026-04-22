@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"path/filepath"
 	"strings"
 
 	"github.com/Lynthar/mkQR/internal/qr"
@@ -48,6 +49,10 @@ Examples:
   echo "text" | mkqr                     # Read from stdin`,
 	Args: cobra.MaximumNArgs(1),
 	RunE: runRoot,
+	// SilenceUsage: don't dump the full help text every time a subcommand
+	// returns an error; cobra still prints the error itself, which is all
+	// the user needs. This also propagates to subcommands.
+	SilenceUsage: true,
 }
 
 func init() {
@@ -142,6 +147,14 @@ func generateQR(content string) error {
 
 	// Output to file or terminal
 	if outputFile != "" {
+		// Reject extensions we don't actually support, rather than silently
+		// producing a PNG named `foo.jpg`. Empty extension (`-o qr`) is OK
+		// and defaults to PNG — matches the library-level DetectFormat contract.
+		ext := strings.ToLower(filepath.Ext(outputFile))
+		if ext != "" && ext != ".png" && ext != ".svg" {
+			return fmt.Errorf("unsupported output extension %q (use .png or .svg)", ext)
+		}
+
 		format := qr.DetectFormat(outputFile)
 		switch format {
 		case qr.FormatSVG:
