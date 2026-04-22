@@ -127,6 +127,66 @@ func TestBoxResizeDownscale(t *testing.T) {
 	}
 }
 
+func TestSavePNGWithLogoHaloFollowsBackground(t *testing.T) {
+	// QR with a distinctive cyan background; halo should match so the logo
+	// halo doesn't look like a white sticker on a colored code.
+	bg := color.NRGBA{R: 0, G: 200, B: 200, A: 255}
+	gen := NewGenerator(Options{Level: LevelH, Size: 256, BackgroundColor: bg})
+	qr, err := gen.Generate("halo color regression")
+	if err != nil {
+		t.Fatalf("Generate() error: %v", err)
+	}
+
+	tmpDir, err := os.MkdirTemp("", "mkqr-halo-*")
+	if err != nil {
+		t.Fatalf("mkdir temp: %v", err)
+	}
+	defer os.RemoveAll(tmpDir)
+
+	logoPath := filepath.Join(tmpDir, "logo.png")
+	logoImg := image.NewRGBA(image.Rect(0, 0, 20, 20))
+	red := color.RGBA{R: 255, G: 0, B: 0, A: 255}
+	for y := 0; y < 20; y++ {
+		for x := 0; x < 20; x++ {
+			logoImg.SetRGBA(x, y, red)
+		}
+	}
+	f, err := os.Create(logoPath)
+	if err != nil {
+		t.Fatalf("create logo: %v", err)
+	}
+	if err := png.Encode(f, logoImg); err != nil {
+		t.Fatalf("encode logo: %v", err)
+	}
+	f.Close()
+
+	outPath := filepath.Join(tmpDir, "out.png")
+	if err := SavePNGWithLogo(qr, outPath, 256, DefaultLogoOptions(logoPath)); err != nil {
+		t.Fatalf("SavePNGWithLogo: %v", err)
+	}
+
+	data, err := os.ReadFile(outPath)
+	if err != nil {
+		t.Fatalf("read output: %v", err)
+	}
+	decoded, err := png.Decode(bytes.NewReader(data))
+	if err != nil {
+		t.Fatalf("decode output: %v", err)
+	}
+
+	// logoSize = 0.20 * 256 = 51 → logo rect center ± ~25; padSize = 61 → pad ± ~30.
+	// Sample a pixel in the halo ring (inside pad, outside logo): x=155, y=128.
+	r, g, b, _ := decoded.At(155, 128).RGBA()
+	rb, gb, bb := r>>8, g>>8, b>>8
+	// Before the fix the halo was hardcoded white; after, it should match bg (cyan).
+	if rb > 80 {
+		t.Errorf("halo pixel R=%d too high for cyan bg — is halo still white?", rb)
+	}
+	if gb < 120 || bb < 120 {
+		t.Errorf("halo pixel G=%d B=%d — should be cyan-dominated", gb, bb)
+	}
+}
+
 func TestBoxResizeEmpty(t *testing.T) {
 	src := image.NewRGBA(image.Rect(0, 0, 0, 0))
 	dst := boxResize(src, 5, 5)

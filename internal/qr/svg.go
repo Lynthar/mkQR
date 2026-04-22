@@ -27,19 +27,36 @@ func SaveSVG(qr *qrcode.QRCode, filename string, size int) error {
 
 // ToSVG renders the QR code to an SVG byte slice.
 // The bitmap from skip2/go-qrcode already includes the standard quiet zone.
+// ForegroundColor / BackgroundColor on qr are honored; a fully-transparent
+// background omits the background rect so the QR sits on page transparency.
 func ToSVG(qr *qrcode.QRCode, size int) []byte {
 	bitmap := qr.Bitmap()
 	n := len(bitmap)
+
+	fgFill, fgOp := colorToSVG(qr.ForegroundColor)
+	bgFill, bgOp := colorToSVG(qr.BackgroundColor)
 
 	var b bytes.Buffer
 	b.WriteString(`<?xml version="1.0" encoding="UTF-8"?>` + "\n")
 	fmt.Fprintf(&b,
 		`<svg xmlns="http://www.w3.org/2000/svg" width="%d" height="%d" viewBox="0 0 %d %d" shape-rendering="crispEdges">`+"\n",
 		size, size, n, n)
-	fmt.Fprintf(&b, `<rect width="%d" height="%d" fill="#ffffff"/>`+"\n", n, n)
+
+	// Emit background rect unless the background is fully transparent.
+	if bgFill != "none" {
+		fmt.Fprintf(&b, `<rect width="%d" height="%d" fill="%s"`, n, n, bgFill)
+		if bgOp != "" {
+			fmt.Fprintf(&b, ` fill-opacity="%s"`, bgOp)
+		}
+		b.WriteString(`/>` + "\n")
+	}
 
 	// Coalesce horizontal runs of dark modules into compact path commands.
-	b.WriteString(`<path fill="#000000" d="`)
+	fmt.Fprintf(&b, `<path fill="%s"`, fgFill)
+	if fgOp != "" {
+		fmt.Fprintf(&b, ` fill-opacity="%s"`, fgOp)
+	}
+	b.WriteString(` d="`)
 	for y := 0; y < n; y++ {
 		x := 0
 		for x < n {

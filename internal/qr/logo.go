@@ -66,8 +66,18 @@ func SavePNGWithLogo(qr *qrcode.QRCode, filename string, size int, opts LogoOpti
 	out := image.NewRGBA(image.Rect(0, 0, size, size))
 	draw.Draw(out, out.Bounds(), qrImg, image.Point{}, draw.Src)
 
+	// Halo matches the QR background color so light-on-dark or tinted themes
+	// stay consistent. Transparent backgrounds fall back to white — a
+	// transparent halo with a logo painted on top would leave the logo fighting
+	// QR modules instead of sitting on a clean patch.
+	halo := color.Color(color.White)
+	if qr.BackgroundColor != nil {
+		if _, _, _, a := qr.BackgroundColor.RGBA(); a > 0 {
+			halo = qr.BackgroundColor
+		}
+	}
 	padRect := centeredRect(size, padSize)
-	draw.Draw(out, padRect, &image.Uniform{C: color.White}, image.Point{}, draw.Src)
+	draw.Draw(out, padRect, &image.Uniform{C: halo}, image.Point{}, draw.Src)
 
 	resized := boxResize(logo, logoSize, logoSize)
 	logoRect := centeredRect(size, logoSize)

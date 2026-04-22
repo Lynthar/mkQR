@@ -19,7 +19,7 @@ import (
 func TestSubcommandHelpDoesNotPanic(t *testing.T) {
 	subcommands := []string{
 		"wifi", "vcard", "otp", "email", "phone", "sms", "geo",
-		"url", "text", "batch",
+		"url", "text", "event", "batch",
 	}
 	for _, name := range subcommands {
 		name := name

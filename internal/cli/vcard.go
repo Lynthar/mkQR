@@ -13,8 +13,10 @@ var (
 	vcardOrg       string
 	vcardTitle     string
 	vcardPhone     string
+	vcardPhoneWork string
 	vcardMobile    string
 	vcardEmail     string
+	vcardEmailWork string
 	vcardWebsite   string
 	vcardAddress   string
 	vcardNote      string
@@ -40,9 +42,11 @@ func init() {
 	vcardCmd.Flags().StringVar(&vcardLastName, "last", "", "Last name")
 	vcardCmd.Flags().StringVarP(&vcardOrg, "org", "O", "", "Organization")
 	vcardCmd.Flags().StringVarP(&vcardTitle, "title", "t", "", "Job title")
-	vcardCmd.Flags().StringVarP(&vcardPhone, "phone", "p", "", "Phone number")
+	vcardCmd.Flags().StringVarP(&vcardPhone, "phone", "p", "", "Home/primary phone number")
+	vcardCmd.Flags().StringVar(&vcardPhoneWork, "phone-work", "", "Work phone number")
 	vcardCmd.Flags().StringVarP(&vcardMobile, "mobile", "m", "", "Mobile phone")
-	vcardCmd.Flags().StringVarP(&vcardEmail, "email", "e", "", "Email address")
+	vcardCmd.Flags().StringVarP(&vcardEmail, "email", "e", "", "Home/primary email address")
+	vcardCmd.Flags().StringVar(&vcardEmailWork, "email-work", "", "Work email address")
 	vcardCmd.Flags().StringVarP(&vcardWebsite, "website", "w", "", "Website URL")
 	vcardCmd.Flags().StringVarP(&vcardAddress, "address", "a", "", "Address")
 	vcardCmd.Flags().StringVarP(&vcardNote, "note", "n", "", "Note")
@@ -62,8 +66,10 @@ func runVCard(cmd *cobra.Command, args []string) error {
 		Organization: vcardOrg,
 		Title:        vcardTitle,
 		Phone:        vcardPhone,
+		PhoneWork:    vcardPhoneWork,
 		PhoneMobile:  vcardMobile,
 		Email:        vcardEmail,
+		EmailWork:    vcardEmailWork,
 		Website:      vcardWebsite,
 		Address:      vcardAddress,
 		Note:         vcardNote,

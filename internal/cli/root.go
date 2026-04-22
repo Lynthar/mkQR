@@ -19,6 +19,8 @@ var (
 	outputSize  int
 	errorLevel  string
 	logoPath    string
+	fgColor     string
+	bgColor     string
 	quiet       bool
 	invert      bool
 	small       bool
@@ -61,6 +63,8 @@ func init() {
 	rootCmd.PersistentFlags().IntVar(&outputSize, "size", 256, "QR code size in pixels")
 	rootCmd.PersistentFlags().StringVarP(&errorLevel, "level", "l", "M", "Error correction level (L/M/Q/H)")
 	rootCmd.PersistentFlags().StringVar(&logoPath, "logo", "", "Embed image at QR center (PNG/JPEG/GIF; PNG output only; forces level H)")
+	rootCmd.PersistentFlags().StringVar(&fgColor, "fg", "", "Foreground color for PNG/SVG output (hex like #ff0000 or name like 'black'; default black)")
+	rootCmd.PersistentFlags().StringVar(&bgColor, "bg", "", "Background color for PNG/SVG output (hex, name, or 'transparent'; default white)")
 	rootCmd.PersistentFlags().BoolVarP(&quiet, "quiet", "q", false, "Suppress non-essential output")
 	rootCmd.PersistentFlags().BoolVar(&invert, "invert", false, "Invert colors (for dark terminals)")
 	rootCmd.PersistentFlags().BoolVar(&small, "small", false, "Use compact display mode")
@@ -137,6 +141,20 @@ func generateQR(content string) error {
 	opts := qr.Options{
 		Level: level,
 		Size:  outputSize,
+	}
+	if fgColor != "" {
+		c, err := qr.ParseColor(fgColor)
+		if err != nil {
+			return fmt.Errorf("--fg: %w", err)
+		}
+		opts.ForegroundColor = c
+	}
+	if bgColor != "" {
+		c, err := qr.ParseColor(bgColor)
+		if err != nil {
+			return fmt.Errorf("--bg: %w", err)
+		}
+		opts.BackgroundColor = c
 	}
 
 	gen := qr.NewGenerator(opts)

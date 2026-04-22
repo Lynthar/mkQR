@@ -1,6 +1,7 @@
 package qr
 
 import (
+	"image/color"
 	"os"
 	"path/filepath"
 	"strings"
@@ -73,6 +74,56 @@ func TestSaveSVG(t *testing.T) {
 	if _, err := os.Stat(nested); err != nil {
 		t.Fatalf("Nested SVG not created: %v", err)
 	}
+}
+
+func TestToSVGCustomColors(t *testing.T) {
+	gen := NewGenerator(Options{
+		Level:           LevelM,
+		Size:            256,
+		ForegroundColor: mustParseColor(t, "#112233"),
+		BackgroundColor: mustParseColor(t, "#fedcba"),
+	})
+	qr, err := gen.Generate("color test")
+	if err != nil {
+		t.Fatalf("Generate() error: %v", err)
+	}
+	svg := string(ToSVG(qr, 256))
+	if !strings.Contains(svg, `fill="#112233"`) {
+		t.Errorf("SVG missing foreground hex; got:\n%s", svg[:300])
+	}
+	if !strings.Contains(svg, `fill="#fedcba"`) {
+		t.Errorf("SVG missing background hex; got:\n%s", svg[:300])
+	}
+	// Default-color path must not leak when custom colors are set.
+	if strings.Contains(svg, `fill="#000000"`) || strings.Contains(svg, `fill="#ffffff"`) {
+		t.Errorf("SVG still contains default hex literals; got:\n%s", svg[:300])
+	}
+}
+
+func TestToSVGTransparentBackground(t *testing.T) {
+	gen := NewGenerator(Options{
+		Level:           LevelM,
+		Size:            256,
+		BackgroundColor: mustParseColor(t, "transparent"),
+	})
+	qr, err := gen.Generate("transparent bg")
+	if err != nil {
+		t.Fatalf("Generate() error: %v", err)
+	}
+	svg := string(ToSVG(qr, 256))
+	// No background rect should be emitted for a transparent bg.
+	if strings.Contains(svg, `<rect`) {
+		t.Errorf("SVG emitted a <rect> despite transparent background; got:\n%s", svg[:300])
+	}
+}
+
+func mustParseColor(t *testing.T, s string) color.Color {
+	t.Helper()
+	parsed, err := ParseColor(s)
+	if err != nil {
+		t.Fatalf("ParseColor(%q): %v", s, err)
+	}
+	return parsed
 }
 
 func TestDetectFormatSVG(t *testing.T) {

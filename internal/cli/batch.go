@@ -88,6 +88,20 @@ func runBatch(cmd *cobra.Command, args []string) error {
 		Level: level,
 		Size:  outputSize,
 	}
+	if fgColor != "" {
+		c, err := qr.ParseColor(fgColor)
+		if err != nil {
+			return fmt.Errorf("--fg: %w", err)
+		}
+		opts.ForegroundColor = c
+	}
+	if bgColor != "" {
+		c, err := qr.ParseColor(bgColor)
+		if err != nil {
+			return fmt.Errorf("--bg: %w", err)
+		}
+		opts.BackgroundColor = c
+	}
 	gen := qr.NewGenerator(opts)
 
 	count := 0
