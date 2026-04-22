@@ -122,12 +122,12 @@ func TestValidateSecret(t *testing.T) {
 		hasError bool
 	}{
 		{"JBSWY3DPEHPK3PXP", false},
-		{"ABCD1234", false},
-		{"abcd1234", false},
-		{"ABCD 1234", false},       // spaces allowed (removed)
-		{"ABCD-1234-EFGH", false},  // hyphens allowed (removed)
+		{"ABCD2345", false},
+		{"abcd2345", false},
+		{"ABCD 2345", false},       // spaces allowed (removed)
+		{"ABCD-2345-EFGH", false},  // hyphens allowed (removed)
 		{"", true},                 // empty
-		{"ABCD1890", true},         // invalid chars (8, 9, 0)
+		{"ABCD1890", true},         // invalid chars (1, 8, 9, 0)
 		{"ABCD!@#$", true},         // special chars
 		{"12345678", true},         // all invalid digits
 	}

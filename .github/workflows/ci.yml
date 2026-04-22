@@ -35,5 +35,10 @@ jobs:
       - name: Vet
         run: go vet ./...
 
-      - name: Test
+      - name: Test (with race detector)
+        if: runner.os == 'Linux'
         run: go test -v -race ./...
+
+      - name: Test
+        if: runner.os != 'Linux'
+        run: go test -v ./...

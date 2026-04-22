@@ -30,6 +30,13 @@ type OTP struct {
 // base32Pattern matches valid base32 characters (A-Z and 2-7, case insensitive)
 var base32Pattern = regexp.MustCompile(`^[A-Za-z2-7]+=*$`)
 
+// otpEscape percent-encodes a label component per Google Key URI Format.
+// Unlike url.PathEscape, it escapes '@' and ':'; unlike url.QueryEscape, it uses
+// %20 instead of '+' for spaces.
+func otpEscape(s string) string {
+	return strings.ReplaceAll(url.QueryEscape(s), "+", "%20")
+}
+
 // ValidateSecret checks if the secret is a valid base32 string
 func ValidateSecret(secret string) error {
 	// Remove spaces and hyphens (common in user-provided secrets)
@@ -51,12 +58,16 @@ func (o *OTP) Encode() string {
 		otpType = TOTP
 	}
 
-	// Build label: "Issuer:Account" or just "Account"
+	// Build label: "Issuer:Account" or just "Account".
+	// The separator ':' between issuer and account stays literal per the spec;
+	// each component is percent-encoded per Google Key URI Format, which requires
+	// '@' → %40, ':' → %3A, space → %20. url.PathEscape is too permissive (keeps
+	// '@' and ':'), so we use url.QueryEscape and repair spaces ('+' → %20).
 	var label string
 	if o.Issuer != "" {
-		label = url.PathEscape(o.Issuer) + ":" + url.PathEscape(o.Account)
+		label = otpEscape(o.Issuer) + ":" + otpEscape(o.Account)
 	} else {
-		label = url.PathEscape(o.Account)
+		label = otpEscape(o.Account)
 	}
 
 	// Build parameters

@@ -1,7 +1,6 @@
 package encoder
 
 import (
-	"strings"
 	"testing"
 )
 
