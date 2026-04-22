@@ -6,28 +6,35 @@ A fast, flexible QR code generator for the command line.
 
 - **Multiple data types**: WiFi, URLs, contacts (vCard), OTP/2FA, email, phone, SMS, geographic location
 - **Multiple output formats**: PNG, SVG (scalable vector), and Unicode in the terminal
-- **Logo embedding**: Composite a PNG/JPEG/GIF image at the QR center; error correction is auto-bumped to level H so the code stays scannable
-- **Cross-platform**: Linux, macOS, Windows — single static binary, zero runtime dependencies, works offline
+- **Logo embedding**: Composite a PNG/JPEG/GIF image at the QR center; error correction is auto-raised to level H so the code stays scannable
+- **Cross-platform**: Linux, macOS, Windows — a single self-contained binary that works offline
 - **Script-friendly**: Supports stdin, exit codes, quiet mode, and batch processing
-- **Auto-detection**: Automatically recognizes input type, including proxy links (vmess/vless/ss/trojan/hysteria/tuic/...)
+- **Auto-detection**: Recognizes input type from the content itself, including proxy links (vmess/vless/ss/trojan/hysteria/tuic/...)
 - **Importable Go library**: Payload formatters (WiFi/vCard/OTP/email/SMS/geo/phone) reusable via `pkg/encoder`
 
 ## Installation
 
+### Pre-built Binary (recommended)
+
+Download from the [Releases](https://github.com/Lynthar/mkQR/releases) page. Each release publishes self-contained binaries for Linux (amd64/arm64), macOS (amd64/arm64), and Windows (amd64), plus a `SHA256SUMS` file for integrity verification. Nothing else to install — copy the binary anywhere (including air-gapped machines) and run it.
+
+### `go install`
+
+If you have a Go toolchain (≥ 1.24):
+
+```bash
+go install github.com/Lynthar/mkQR/cmd/mkqr@latest
+```
+
+This puts `mkqr` in `$(go env GOPATH)/bin`. Note: binaries built this way report `version dev` — only the Makefile wires real version metadata via `-ldflags`.
+
 ### From Source
 
 ```bash
-# Clone the repository
 git clone https://github.com/Lynthar/mkQR.git
 cd mkQR
-
-# Build and install
-make install
+make install      # needs `make`; on Windows use Git Bash / WSL, or substitute `go install ./cmd/mkqr`
 ```
-
-### Download Binary
-
-Download pre-built binaries from the [Releases](https://github.com/Lynthar/mkQR/releases) page. Each release publishes static, self-contained binaries for Linux (amd64/arm64), macOS (amd64/arm64), and Windows (amd64), plus a `SHA256SUMS` file for integrity verification. No runtime dependencies — copy the binary anywhere (including air-gapped machines) and run it.
 
 ## Usage
 
@@ -38,12 +45,18 @@ Download pre-built binaries from the [Releases](https://github.com/Lynthar/mkQR/
 mkqr "https://github.com"
 mkqr "vmess://eyJ..."
 
+# Bare URLs without a scheme are automatically prefixed with https://
+mkqr github.com
+
 # Read from stdin (great for scripts)
 echo "Hello World" | mkqr
 cat proxy_link.txt | mkqr
 
 # Save to file
 mkqr "https://example.com" -o qr.png
+
+# Show version
+mkqr --version
 ```
 
 ### WiFi Network
@@ -129,16 +142,18 @@ mkqr "text" -q
 
 | Method | Format | Location |
 |--------|--------|----------|
-| `mkqr "text"` | Unicode characters | Terminal (stdout) |
+| `mkqr "text"` | Unicode blocks (██, ▀, ▄) | Terminal (stdout) |
 | `mkqr "text" -o file.png` | PNG image | Specified file path |
 | `mkqr "text" -o file.svg` | SVG vector | Specified file path |
 | `mkqr "text" -o file.png --logo logo.png` | PNG with centered logo | Specified file path |
-| `mkqr batch file.txt -O ./dir/` | PNG images | Specified directory |
+| `mkqr batch file.txt -O ./dir/` | PNG images (one per line) | Specified directory |
 
-- **Terminal output**: Uses Unicode block characters (██, ▀, ▄) for display, no file created
-- **PNG output**: Standard PNG image, default size 256x256 pixels (adjustable with `--size`)
-- **SVG output**: Scalable vector with `shape-rendering="crispEdges"` so scanners see hard module edges at any size
-- **Logo embedding**: Accepts PNG, JPEG, or GIF. Logo is scaled to 20% of the QR size with a white pad halo; the code is generated at error correction level H so the occluded modules remain recoverable
+Notes:
+
+- Default pixel size is **256** (adjustable with `--size`); default error correction is **M** (adjustable with `--level L/M/Q/H`).
+- SVG output sets `shape-rendering="crispEdges"` so scanners see hard module edges at any zoom.
+- Logo images accept PNG, JPEG, or GIF; the logo is scaled to 20% of the QR edge and given a small white halo. Level H is forced while a logo is in use (a one-line note goes to stderr unless `--quiet`).
+- Only `.png` and `.svg` are accepted as `-o` extensions; anything else (e.g. `.jpg`) is rejected up front rather than silently written as PNG.
 
 ## Supported Types
 
@@ -185,6 +200,19 @@ make cross
 make test
 ```
 
+## Shell Completion
+
+Completion scripts are generated on demand:
+
+```bash
+mkqr completion bash       > /etc/bash_completion.d/mkqr   # or source into your rc file
+mkqr completion zsh        > "${fpath[1]}/_mkqr"
+mkqr completion fish       > ~/.config/fish/completions/mkqr.fish
+mkqr completion powershell | Out-String | Invoke-Expression
+```
+
+Run `mkqr completion <shell> --help` for shell-specific install hints.
+
 ## Use as a Go library
 
 The payload encoders are exported under `github.com/Lynthar/mkQR/pkg/encoder` and can be imported directly if you want to produce the wire-format strings (WiFi, vCard, OTP, email, SMS, geo, phone) without a CLI shell-out.
@@ -206,54 +234,28 @@ mkQR works completely offline — no network connection required at runtime. All
 
 On a computer with internet access, download the appropriate binary and its checksum from the [Releases](https://github.com/Lynthar/mkQR/releases) page. Verify the file against `SHA256SUMS`, then copy it to your offline machine via USB or other removable media. No further steps required — just run the binary.
 
-### Option 2: Build from Source
+### Option 2: Build from Source on a Connected Machine
 
-On a computer with internet access:
-
-```bash
-git clone https://github.com/Lynthar/mkQR.git
-cd mkQR
-
-# Build for current platform
-make build
-
-# Or cross-compile for multiple platforms
-make cross
-```
-
-This creates binaries in the `build/` directory:
-
-```
-build/
-├── mkqr-linux-amd64
-├── mkqr-linux-arm64
-├── mkqr-darwin-amd64
-├── mkqr-darwin-arm64
-└── mkqr-windows-amd64.exe
-```
-
-Copy the appropriate binary to the offline computer via USB drive or other media. The binary is self-contained with no external dependencies.
+Clone the repo and run `make cross` (see [Building](#building)) to produce binaries for all five target platforms under `build/`. Copy the one that matches the offline machine via USB or similar. The result is functionally identical to a Releases download.
 
 ### Option 3: Copy Source with Vendored Dependencies
 
-If you need to compile on the offline computer:
-
-On a computer with internet access:
+For strict air-gap scenarios where even a binary copy is impractical and you must compile *on* the offline machine:
 
 ```bash
+# On a computer with internet access:
 git clone https://github.com/Lynthar/mkQR.git
 cd mkQR
-
-# Download dependencies into vendor directory
-go mod vendor
+go mod vendor      # fetches all deps into ./vendor
 ```
 
-Copy the entire project directory (including `vendor/`) to the offline computer, then build:
+Copy the entire `mkQR/` directory (including `vendor/`) to the offline computer, then:
 
 ```bash
-cd mkQR
 go build -mod=vendor -o mkqr ./cmd/mkqr
 ```
+
+No network traffic at any point during the offline build.
 
 ## License
 
