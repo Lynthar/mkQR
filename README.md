@@ -5,10 +5,12 @@ A fast, flexible QR code generator for the command line.
 ## Features
 
 - **Multiple data types**: WiFi, URLs, contacts (vCard), OTP/2FA, email, phone, SMS, geographic location
-- **Cross-platform**: Linux, macOS, Windows
-- **Terminal display**: Renders QR codes directly in your terminal
+- **Multiple output formats**: PNG, SVG (scalable vector), and Unicode in the terminal
+- **Logo embedding**: Composite a PNG/JPEG/GIF image at the QR center; error correction is auto-bumped to level H so the code stays scannable
+- **Cross-platform**: Linux, macOS, Windows — single static binary, zero runtime dependencies, works offline
 - **Script-friendly**: Supports stdin, exit codes, quiet mode, and batch processing
-- **Auto-detection**: Automatically recognizes input type (URLs, proxy links, etc.)
+- **Auto-detection**: Automatically recognizes input type, including proxy links (vmess/vless/ss/trojan/hysteria/tuic/...)
+- **Importable Go library**: Payload formatters (WiFi/vCard/OTP/email/SMS/geo/phone) reusable via `pkg/encoder`
 
 ## Installation
 
@@ -56,7 +58,7 @@ mkqr wifi -s "HiddenNetwork" -p "pass" --hidden
 ### Contact Card (vCard)
 
 ```bash
-mkqr vcard -f "John" -l "Doe" -p "+1234567890" -e "john@example.com"
+mkqr vcard -f "John" --last "Doe" -p "+1234567890" -e "john@example.com"
 mkqr vcard --first "Jane" --last "Smith" --org "Acme Inc" --mobile "+1234567890"
 ```
 
@@ -64,8 +66,10 @@ mkqr vcard --first "Jane" --last "Smith" --org "Acme Inc" --mobile "+1234567890"
 
 ```bash
 mkqr otp -s "JBSWY3DPEHPK3PXP" -i "GitHub" -a "user@example.com"
-mkqr otp --secret "ABCD1234" --issuer "AWS" --account "myaccount" --digits 8
+mkqr otp --secret "NBSWY3DPO5XXE3DE" --issuer "AWS" --account "myaccount" --digits 8
 ```
+
+The secret must be valid base32 (letters A–Z plus digits 2–7; whitespace and hyphens are stripped).
 
 ### Email, Phone, SMS
 
@@ -79,7 +83,7 @@ mkqr sms +1234567890 -b "Hello!"
 
 ```bash
 mkqr geo --lat 40.7128 --lng -74.0060
-mkqr geo --lat 39.9042 --lng 116.4074 -q "Beijing"
+mkqr geo --lat 39.9042 --lng 116.4074 --query "Beijing"
 ```
 
 ### Batch Processing

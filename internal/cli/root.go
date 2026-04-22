@@ -36,14 +36,16 @@ var rootCmd = &cobra.Command{
 	Long: `mkQR - A fast, flexible QR code generator for the command line.
 
 Supports WiFi, URLs, contacts, OTP, and many more formats.
-Can output to terminal, PNG, or base64.
+Outputs to terminal (Unicode blocks), PNG, or SVG.
 
 Examples:
-  mkqr "Hello World"                    # Generate QR for text
-  mkqr "https://github.com"             # Auto-detect URL
-  mkqr wifi -s "MyNetwork" -p "pass"    # WiFi network
-  mkqr "vmess://..." -o proxy.png       # Save proxy QR to file
-  echo "text" | mkqr                    # Read from stdin`,
+  mkqr "Hello World"                     # Generate QR for text
+  mkqr "https://github.com"              # Auto-detect URL
+  mkqr wifi -s "MyNetwork" -p "pass"     # WiFi network
+  mkqr "vmess://..." -o proxy.png        # Save proxy QR to PNG
+  mkqr "text" -o qr.svg                  # Save as scalable SVG
+  mkqr "url" --logo logo.png -o brand.png # Embed logo at center
+  echo "text" | mkqr                     # Read from stdin`,
 	Args: cobra.MaximumNArgs(1),
 	RunE: runRoot,
 }

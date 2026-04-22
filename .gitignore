@@ -8,10 +8,17 @@
 *.swp
 *.swo
 
+# AI assistant local settings (not the shared CLAUDE.md)
+.claude/
+
 # OS
 .DS_Store
 Thumbs.db
 
-# Test output
-*.png
+# Ad-hoc test output (narrower than `*.png` so docs/assets can still be tracked)
 /tmp/
+/testdata-out/
+qr.png
+qr.svg
+out.png
+out.svg
