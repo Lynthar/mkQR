@@ -7,8 +7,8 @@ import (
 	"os"
 	"strings"
 
-	"github.com/Lynthar/mkQR/internal/encoder"
 	"github.com/Lynthar/mkQR/internal/qr"
+	"github.com/Lynthar/mkQR/pkg/encoder"
 	"github.com/spf13/cobra"
 )
 
@@ -17,6 +17,7 @@ var (
 	outputFile  string
 	outputSize  int
 	errorLevel  string
+	logoPath    string
 	quiet       bool
 	invert      bool
 	small       bool
@@ -49,9 +50,10 @@ Examples:
 
 func init() {
 	// Global flags
-	rootCmd.PersistentFlags().StringVarP(&outputFile, "output", "o", "", "Output file (PNG format)")
+	rootCmd.PersistentFlags().StringVarP(&outputFile, "output", "o", "", "Output file (.png or .svg)")
 	rootCmd.PersistentFlags().IntVar(&outputSize, "size", 256, "QR code size in pixels")
 	rootCmd.PersistentFlags().StringVarP(&errorLevel, "level", "l", "M", "Error correction level (L/M/Q/H)")
+	rootCmd.PersistentFlags().StringVar(&logoPath, "logo", "", "Embed image at QR center (PNG/JPEG/GIF; PNG output only; forces level H)")
 	rootCmd.PersistentFlags().BoolVarP(&quiet, "quiet", "q", false, "Suppress non-essential output")
 	rootCmd.PersistentFlags().BoolVar(&invert, "invert", false, "Invert colors (for dark terminals)")
 	rootCmd.PersistentFlags().BoolVar(&small, "small", false, "Use compact display mode")
@@ -117,6 +119,14 @@ func generateQR(content string) error {
 		return err
 	}
 
+	// Logo embedding occludes QR modules; force level H so the code stays scannable.
+	if logoPath != "" && level != qr.LevelH {
+		if !quiet {
+			fmt.Fprintln(os.Stderr, "Note: forcing error correction level H for logo embedding")
+		}
+		level = qr.LevelH
+	}
+
 	opts := qr.Options{
 		Level: level,
 		Size:  outputSize,
@@ -130,13 +140,33 @@ func generateQR(content string) error {
 
 	// Output to file or terminal
 	if outputFile != "" {
-		if err := qr.SavePNG(qrCode, outputFile, outputSize); err != nil {
-			return err
+		format := qr.DetectFormat(outputFile)
+		switch format {
+		case qr.FormatSVG:
+			if logoPath != "" {
+				return fmt.Errorf("logo embedding is not supported for SVG output (PNG only)")
+			}
+			if err := qr.SaveSVG(qrCode, outputFile, outputSize); err != nil {
+				return err
+			}
+		default: // FormatPNG
+			if logoPath != "" {
+				if err := qr.SavePNGWithLogo(qrCode, outputFile, outputSize, qr.DefaultLogoOptions(logoPath)); err != nil {
+					return err
+				}
+			} else {
+				if err := qr.SavePNG(qrCode, outputFile, outputSize); err != nil {
+					return err
+				}
+			}
 		}
 		if !quiet {
 			fmt.Fprintf(os.Stderr, "Saved to: %s\n", outputFile)
 		}
 	} else {
+		if logoPath != "" {
+			return fmt.Errorf("--logo requires an output file (-o); terminal rendering does not support images")
+		}
 		// Render to terminal
 		cfg := qr.TerminalConfig{
 			Invert: invert,

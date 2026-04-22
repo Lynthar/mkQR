@@ -25,7 +25,7 @@ make install
 
 ### Download Binary
 
-Download pre-built binaries from the [Releases](https://github.com/Lynthar/mkQR/releases) page.
+Download pre-built binaries from the [Releases](https://github.com/Lynthar/mkQR/releases) page. Each release publishes static, self-contained binaries for Linux (amd64/arm64), macOS (amd64/arm64), and Windows (amd64), plus a `SHA256SUMS` file for integrity verification. No runtime dependencies — copy the binary anywhere (including air-gapped machines) and run it.
 
 ## Usage
 
@@ -102,6 +102,12 @@ mkqr "text"
 # Save to PNG file
 mkqr "text" -o qr.png
 
+# Save to SVG (scales losslessly, ideal for print or web)
+mkqr "text" -o qr.svg
+
+# Embed a logo in the center (PNG output only; auto-forces error correction H)
+mkqr "https://example.com" -o branded.png --logo mylogo.png
+
 # Invert colors (for dark terminals)
 mkqr "text" --invert
 
@@ -121,10 +127,14 @@ mkqr "text" -q
 |--------|--------|----------|
 | `mkqr "text"` | Unicode characters | Terminal (stdout) |
 | `mkqr "text" -o file.png` | PNG image | Specified file path |
+| `mkqr "text" -o file.svg` | SVG vector | Specified file path |
+| `mkqr "text" -o file.png --logo logo.png` | PNG with centered logo | Specified file path |
 | `mkqr batch file.txt -O ./dir/` | PNG images | Specified directory |
 
 - **Terminal output**: Uses Unicode block characters (██, ▀, ▄) for display, no file created
 - **PNG output**: Standard PNG image, default size 256x256 pixels (adjustable with `--size`)
+- **SVG output**: Scalable vector with `shape-rendering="crispEdges"` so scanners see hard module edges at any size
+- **Logo embedding**: Accepts PNG, JPEG, or GIF. Logo is scaled to 20% of the QR size with a white pad halo; the code is generated at error correction level H so the occluded modules remain recoverable
 
 ## Supported Types
 
@@ -171,11 +181,28 @@ make cross
 make test
 ```
 
+## Use as a Go library
+
+The payload encoders are exported under `github.com/Lynthar/mkQR/pkg/encoder` and can be imported directly if you want to produce the wire-format strings (WiFi, vCard, OTP, email, SMS, geo, phone) without a CLI shell-out.
+
+```go
+import "github.com/Lynthar/mkQR/pkg/encoder"
+
+s := (&encoder.WiFi{SSID: "Home", Password: "secret", Encryption: encoder.WPA}).Encode()
+// s == "WIFI:T:WPA;S:Home;P:secret;;"
+```
+
+Auto-detection is also exposed via `encoder.Detect()` / `encoder.DetectAndDescribe()`.
+
 ## Offline Usage
 
-mkQR works completely offline - no network connection required at runtime. All QR code generation is done locally.
+mkQR works completely offline — no network connection required at runtime. All QR code generation is done locally, and the binary is statically linked Go (no shared library dependencies).
 
-### Option 1: Copy Pre-built Binary (Recommended)
+### Option 1: Download from Releases (Easiest)
+
+On a computer with internet access, download the appropriate binary and its checksum from the [Releases](https://github.com/Lynthar/mkQR/releases) page. Verify the file against `SHA256SUMS`, then copy it to your offline machine via USB or other removable media. No further steps required — just run the binary.
+
+### Option 2: Build from Source
 
 On a computer with internet access:
 
@@ -203,7 +230,7 @@ build/
 
 Copy the appropriate binary to the offline computer via USB drive or other media. The binary is self-contained with no external dependencies.
 
-### Option 2: Copy Source with Dependencies
+### Option 3: Copy Source with Vendored Dependencies
 
 If you need to compile on the offline computer:
 

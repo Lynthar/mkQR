@@ -7,8 +7,8 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/Lynthar/mkQR/internal/encoder"
 	"github.com/Lynthar/mkQR/internal/qr"
+	"github.com/Lynthar/mkQR/pkg/encoder"
 	"github.com/spf13/cobra"
 )
 
@@ -76,6 +76,14 @@ func runBatch(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
+	// Logo embedding occludes QR modules; force level H so codes stay scannable.
+	if logoPath != "" && level != qr.LevelH {
+		if !quiet {
+			fmt.Fprintln(cmd.ErrOrStderr(), "Note: forcing error correction level H for logo embedding")
+		}
+		level = qr.LevelH
+	}
+
 	opts := qr.Options{
 		Level: level,
 		Size:  outputSize,
@@ -112,9 +120,16 @@ func runBatch(cmd *cobra.Command, args []string) error {
 
 		// Save to file
 		filename := filepath.Join(batchOutputDir, fmt.Sprintf("%s%04d.%s", batchPrefix, count+1, batchFormat))
-		if err := qr.SavePNG(qrCode, filename, outputSize); err != nil {
-			fmt.Fprintf(cmd.ErrOrStderr(), "Error saving line %d: %v\n", lineNum, err)
-			continue
+		if logoPath != "" {
+			if err := qr.SavePNGWithLogo(qrCode, filename, outputSize, qr.DefaultLogoOptions(logoPath)); err != nil {
+				fmt.Fprintf(cmd.ErrOrStderr(), "Error saving line %d: %v\n", lineNum, err)
+				continue
+			}
+		} else {
+			if err := qr.SavePNG(qrCode, filename, outputSize); err != nil {
+				fmt.Fprintf(cmd.ErrOrStderr(), "Error saving line %d: %v\n", lineNum, err)
+				continue
+			}
 		}
 
 		if !quiet {

@@ -3,7 +3,7 @@ package cli
 import (
 	"fmt"
 
-	"github.com/Lynthar/mkQR/internal/encoder"
+	"github.com/Lynthar/mkQR/pkg/encoder"
 	"github.com/spf13/cobra"
 )
 

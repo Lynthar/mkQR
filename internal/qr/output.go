@@ -16,6 +16,7 @@ type OutputFormat string
 const (
 	FormatTerminal OutputFormat = "terminal"
 	FormatPNG      OutputFormat = "png"
+	FormatSVG      OutputFormat = "svg"
 	FormatBase64   OutputFormat = "base64"
 )
 
@@ -23,6 +24,8 @@ const (
 func DetectFormat(filename string) OutputFormat {
 	ext := strings.ToLower(filepath.Ext(filename))
 	switch ext {
+	case ".svg":
+		return FormatSVG
 	case ".png":
 		return FormatPNG
 	default:
