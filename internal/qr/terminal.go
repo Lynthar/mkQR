@@ -10,7 +10,7 @@ import (
 
 // TerminalConfig configures terminal output
 type TerminalConfig struct {
-	Invert bool // Invert colors for dark terminals
+	Invert bool // Invert colors for light terminals (default rendering targets dark terminals)
 	Small  bool // Use half-block characters for compact output
 }
 

@@ -69,6 +69,10 @@ func runBatch(cmd *cobra.Command, args []string) error {
 		defer file.Close()
 		scanner = bufio.NewScanner(file)
 	}
+	// Raise the per-line cap from the default 64KB — a single vmess:// or
+	// subscription line can easily exceed that when it carries a large
+	// base64 payload, and hitting the cap aborts the whole batch.
+	scanner.Buffer(make([]byte, 64*1024), 10*1024*1024)
 
 	// Parse error correction level
 	level, err := qr.ParseLevel(errorLevel)
@@ -121,8 +125,8 @@ func runBatch(cmd *cobra.Command, args []string) error {
 
 		// Add https:// for URLs without protocol
 		content := line
-		if contentType == encoder.TypeURL && !strings.HasPrefix(strings.ToLower(line), "http") {
-			content = "https://" + line
+		if contentType == encoder.TypeURL {
+			content = ensureHTTPScheme(line)
 		}
 
 		// Generate QR code
@@ -147,10 +151,11 @@ func runBatch(cmd *cobra.Command, args []string) error {
 		}
 
 		if !quiet {
-			// Truncate long content for display
+			// Truncate by runes, not bytes, so multi-byte characters (e.g.
+			// CJK) aren't sliced mid-character into garbled output.
 			preview := line
-			if len(preview) > 40 {
-				preview = preview[:40] + "..."
+			if runes := []rune(preview); len(runes) > 40 {
+				preview = string(runes[:40]) + "..."
 			}
 			fmt.Fprintf(cmd.ErrOrStderr(), "[%d] %s -> %s\n", count+1, preview, filename)
 		}

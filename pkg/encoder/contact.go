@@ -2,7 +2,6 @@ package encoder
 
 import (
 	"fmt"
-	"net/url"
 	"strings"
 )
 
@@ -20,16 +19,16 @@ func (e *Email) Encode() string {
 	var params []string
 
 	if e.CC != "" {
-		params = append(params, "cc="+url.QueryEscape(e.CC))
+		params = append(params, "cc="+percentEscape(e.CC))
 	}
 	if e.BCC != "" {
-		params = append(params, "bcc="+url.QueryEscape(e.BCC))
+		params = append(params, "bcc="+percentEscape(e.BCC))
 	}
 	if e.Subject != "" {
-		params = append(params, "subject="+url.QueryEscape(e.Subject))
+		params = append(params, "subject="+percentEscape(e.Subject))
 	}
 	if e.Body != "" {
-		params = append(params, "body="+url.QueryEscape(e.Body))
+		params = append(params, "body="+percentEscape(e.Body))
 	}
 
 	result := "mailto:" + e.To
@@ -63,7 +62,7 @@ func (s *SMS) Encode() string {
 	number := strings.ReplaceAll(s.Number, " ", "")
 	result := "sms:" + number
 	if s.Body != "" {
-		result += "?body=" + url.QueryEscape(s.Body)
+		result += "?body=" + percentEscape(s.Body)
 	}
 	return result
 }
@@ -78,7 +77,7 @@ type Geo struct {
 // Encode returns the geo: URL
 func (g *Geo) Encode() string {
 	if g.Query != "" {
-		return fmt.Sprintf("geo:%f,%f?q=%s", g.Latitude, g.Longitude, url.QueryEscape(g.Query))
+		return fmt.Sprintf("geo:%f,%f?q=%s", g.Latitude, g.Longitude, percentEscape(g.Query))
 	}
 	return fmt.Sprintf("geo:%f,%f", g.Latitude, g.Longitude)
 }

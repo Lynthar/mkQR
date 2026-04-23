@@ -30,10 +30,11 @@ func runText(cmd *cobra.Command, args []string) error {
 	content := args[0]
 
 	if !quiet {
-		// Show truncated preview for long text
+		// Truncate by runes, not bytes, so multi-byte characters (e.g. CJK)
+		// aren't sliced mid-character into garbled output.
 		preview := content
-		if len(preview) > 50 {
-			preview = preview[:50] + "..."
+		if runes := []rune(preview); len(runes) > 50 {
+			preview = string(runes[:50]) + "..."
 		}
 		fmt.Fprintf(cmd.ErrOrStderr(), "Text: %s\n", preview)
 	}

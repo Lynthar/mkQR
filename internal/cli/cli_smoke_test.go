@@ -5,6 +5,30 @@ import (
 	"testing"
 )
 
+func TestEnsureHTTPScheme(t *testing.T) {
+	tests := []struct {
+		in, want string
+	}{
+		{"https://example.com", "https://example.com"},
+		{"http://example.com", "http://example.com"},
+		{"HTTPS://EXAMPLE.COM", "HTTPS://EXAMPLE.COM"},
+		{"example.com", "https://example.com"},
+		{"example.com/path", "https://example.com/path"},
+		// Regression: the previous `HasPrefix(..., "http")` check falsely
+		// accepted domains that happened to start with "http", leaving them
+		// without a scheme and producing invalid QR content.
+		{"httpfoobar.com", "https://httpfoobar.com"},
+		{"httpsfoo.example", "https://httpsfoo.example"},
+	}
+	for _, tt := range tests {
+		t.Run(tt.in, func(t *testing.T) {
+			if got := ensureHTTPScheme(tt.in); got != tt.want {
+				t.Errorf("ensureHTTPScheme(%q) = %q, want %q", tt.in, got, tt.want)
+			}
+		})
+	}
+}
+
 // TestSubcommandHelpDoesNotPanic verifies every subcommand can render its
 // --help without panicking.
 //

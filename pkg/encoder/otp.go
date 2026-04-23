@@ -30,17 +30,24 @@ type OTP struct {
 // base32Pattern matches valid base32 characters (A-Z and 2-7, case insensitive)
 var base32Pattern = regexp.MustCompile(`^[A-Za-z2-7]+=*$`)
 
-// otpEscape percent-encodes a label component per Google Key URI Format.
-// Unlike url.PathEscape, it escapes '@' and ':'; unlike url.QueryEscape, it uses
-// %20 instead of '+' for spaces.
-func otpEscape(s string) string {
+// percentEscape encodes a string per RFC 3986 percent-encoding, as required by
+// mailto: (RFC 6068), sms:, geo:, and the OTP Key URI Format. Differs from
+// url.QueryEscape (HTML form encoding) only in using %20 for spaces instead
+// of '+', which strict URI parsers reject in these schemes.
+func percentEscape(s string) string {
 	return strings.ReplaceAll(url.QueryEscape(s), "+", "%20")
+}
+
+// cleanSecret strips spaces and hyphens commonly used as readability
+// separators in user-pasted base32 secrets. Must be applied before embedding
+// the secret in an otpauth:// URI (RFC 3986 forbids literal spaces).
+func cleanSecret(s string) string {
+	return strings.ReplaceAll(strings.ReplaceAll(s, " ", ""), "-", "")
 }
 
 // ValidateSecret checks if the secret is a valid base32 string
 func ValidateSecret(secret string) error {
-	// Remove spaces and hyphens (common in user-provided secrets)
-	cleaned := strings.ReplaceAll(strings.ReplaceAll(secret, " ", ""), "-", "")
+	cleaned := cleanSecret(secret)
 	if cleaned == "" {
 		return fmt.Errorf("secret cannot be empty")
 	}
@@ -61,21 +68,19 @@ func (o *OTP) Encode() string {
 	// Build label: "Issuer:Account" or just "Account".
 	// The separator ':' between issuer and account stays literal per the spec;
 	// each component is percent-encoded per Google Key URI Format, which requires
-	// '@' → %40, ':' → %3A, space → %20. url.PathEscape is too permissive (keeps
-	// '@' and ':'), so we use url.QueryEscape and repair spaces ('+' → %20).
+	// '@' → %40, ':' → %3A, space → %20 — i.e. RFC 3986 encoding, not HTML form.
 	var label string
 	if o.Issuer != "" {
-		label = otpEscape(o.Issuer) + ":" + otpEscape(o.Account)
+		label = percentEscape(o.Issuer) + ":" + percentEscape(o.Account)
 	} else {
-		label = otpEscape(o.Account)
+		label = percentEscape(o.Account)
 	}
 
-	// Build parameters
 	var params []string
-	params = append(params, "secret="+strings.ToUpper(o.Secret))
+	params = append(params, "secret="+strings.ToUpper(cleanSecret(o.Secret)))
 
 	if o.Issuer != "" {
-		params = append(params, "issuer="+url.QueryEscape(o.Issuer))
+		params = append(params, "issuer="+percentEscape(o.Issuer))
 	}
 
 	if o.Algorithm != "" && o.Algorithm != "SHA1" {

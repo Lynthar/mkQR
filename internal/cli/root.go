@@ -66,7 +66,7 @@ func init() {
 	rootCmd.PersistentFlags().StringVar(&fgColor, "fg", "", "Foreground color for PNG/SVG output (hex like #ff0000 or name like 'black'; default black)")
 	rootCmd.PersistentFlags().StringVar(&bgColor, "bg", "", "Background color for PNG/SVG output (hex, name, or 'transparent'; default white)")
 	rootCmd.PersistentFlags().BoolVarP(&quiet, "quiet", "q", false, "Suppress non-essential output")
-	rootCmd.PersistentFlags().BoolVar(&invert, "invert", false, "Invert colors (for dark terminals)")
+	rootCmd.PersistentFlags().BoolVar(&invert, "invert", false, "Invert colors (for light terminals)")
 	rootCmd.PersistentFlags().BoolVar(&small, "small", false, "Use compact display mode")
 	rootCmd.PersistentFlags().BoolVarP(&showVersion, "version", "v", false, "Show version information")
 }
@@ -111,11 +111,23 @@ func runRoot(cmd *cobra.Command, args []string) error {
 	}
 
 	// For detected URLs without protocol, add https://
-	if contentType == encoder.TypeURL && !strings.HasPrefix(strings.ToLower(content), "http") {
-		content = "https://" + content
+	if contentType == encoder.TypeURL {
+		content = ensureHTTPScheme(content)
 	}
 
 	return generateQR(content)
+}
+
+// ensureHTTPScheme prepends "https://" when the input doesn't already carry
+// an http:// or https:// scheme. Checking the bare prefix "http" is too loose
+// — inputs like "httpfoobar.com" would be left untouched and produce a QR
+// whose content isn't a valid URL.
+func ensureHTTPScheme(s string) string {
+	lower := strings.ToLower(s)
+	if strings.HasPrefix(lower, "http://") || strings.HasPrefix(lower, "https://") {
+		return s
+	}
+	return "https://" + s
 }
 
 // generateQR is the common QR generation logic

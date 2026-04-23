@@ -79,6 +79,34 @@ func TestOTPEncode(t *testing.T) {
 				"secret=SECRET",
 			},
 		},
+		{
+			// Regression: user-pasted secrets often include spaces/hyphens for
+			// readability. Without cleanup the URI contains literal spaces and
+			// strict authenticator apps reject the code.
+			name: "secret with spaces and hyphens is cleaned",
+			otp: OTP{
+				Secret:  "ABCD 2345-EFGH",
+				Issuer:  "Test",
+				Account: "user",
+			},
+			contains: []string{
+				"secret=ABCD2345EFGH",
+			},
+		},
+		{
+			// Regression: Google Key URI Format requires RFC 3986 encoding
+			// (space → %20). The previous url.QueryEscape produced '+'.
+			name: "issuer with spaces uses %20 not '+'",
+			otp: OTP{
+				Secret:  "JBSWY3DPEHPK3PXP",
+				Issuer:  "My Service",
+				Account: "user@example.com",
+			},
+			contains: []string{
+				"issuer=My%20Service",
+				"My%20Service:user%40example.com",
+			},
+		},
 	}
 
 	for _, tt := range tests {
@@ -113,6 +141,24 @@ func TestOTPEncodeDefaultsNotIncluded(t *testing.T) {
 	}
 	if strings.Contains(result, "period=") {
 		t.Errorf("Default period=30 should not be in URL: %s", result)
+	}
+}
+
+func TestOTPEncodeDoesNotLeakSecretSeparators(t *testing.T) {
+	otp := OTP{
+		Secret:  "ABCD 2345-EFGH",
+		Issuer:  "Test",
+		Account: "user",
+	}
+	result := otp.Encode()
+
+	// Negative assertion: the cleaned secret must not carry separators into
+	// the URI (literal space is invalid per RFC 3986; '+' would be an HTML-
+	// form decoded space, which some apps misinterpret).
+	for _, bad := range []string{"secret=ABCD ", "secret=ABCD+", "secret=ABCD-"} {
+		if strings.Contains(result, bad) {
+			t.Errorf("encoded URL leaks separator %q: %s", bad, result)
+		}
 	}
 }
 

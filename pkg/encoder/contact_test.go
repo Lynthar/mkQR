@@ -22,7 +22,7 @@ func TestEmailEncode(t *testing.T) {
 				To:      "test@example.com",
 				Subject: "Hello World",
 			},
-			expected: "mailto:test@example.com?subject=Hello+World",
+			expected: "mailto:test@example.com?subject=Hello%20World",
 		},
 		{
 			name: "with body",
@@ -30,7 +30,7 @@ func TestEmailEncode(t *testing.T) {
 				To:   "test@example.com",
 				Body: "Message body",
 			},
-			expected: "mailto:test@example.com?body=Message+body",
+			expected: "mailto:test@example.com?body=Message%20body",
 		},
 		{
 			name: "with CC and BCC",
@@ -123,6 +123,15 @@ func TestSMSEncode(t *testing.T) {
 			},
 			expected: "sms:+1234567890?body=Test",
 		},
+		{
+			// Regression: body with spaces must use %20 (RFC 3986), not '+'.
+			name: "body with spaces uses %20",
+			sms: SMS{
+				Number: "+1234567890",
+				Body:   "Hello World",
+			},
+			expected: "sms:+1234567890?body=Hello%20World",
+		},
 	}
 
 	for _, tt := range tests {
@@ -165,7 +174,7 @@ func TestGeoEncode(t *testing.T) {
 				Longitude: 121.4737,
 				Query:     "Shanghai Tower",
 			},
-			contains: []string{"geo:31.230400,121.473700?q=Shanghai+Tower"},
+			contains: []string{"geo:31.230400,121.473700?q=Shanghai%20Tower"},
 		},
 	}
 

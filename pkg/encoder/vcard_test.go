@@ -106,6 +106,17 @@ func TestVCardEncode(t *testing.T) {
 	}
 }
 
+func TestVCardUsesCRLF(t *testing.T) {
+	// RFC 2426 §2.4.2 requires CRLF line delimiters.
+	v := VCard{FirstName: "John", LastName: "Doe"}
+	result := v.Encode()
+	for _, want := range []string{"BEGIN:VCARD\r\n", "VERSION:3.0\r\n", "N:Doe;John;;;\r\n"} {
+		if !strings.Contains(result, want) {
+			t.Errorf("missing CRLF-delimited line %q in output:\n%s", want, result)
+		}
+	}
+}
+
 func TestVCardNoExtraSpaceInFN(t *testing.T) {
 	tests := []struct {
 		name      string

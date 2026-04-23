@@ -2,7 +2,6 @@ package cli
 
 import (
 	"fmt"
-	"strings"
 
 	"github.com/spf13/cobra"
 )
@@ -27,13 +26,7 @@ func init() {
 }
 
 func runURL(cmd *cobra.Command, args []string) error {
-	url := args[0]
-
-	// Add https:// if no protocol specified
-	if !strings.HasPrefix(strings.ToLower(url), "http://") &&
-		!strings.HasPrefix(strings.ToLower(url), "https://") {
-		url = "https://" + url
-	}
+	url := ensureHTTPScheme(args[0])
 
 	if !quiet {
 		fmt.Fprintf(cmd.ErrOrStderr(), "URL: %s\n", url)
