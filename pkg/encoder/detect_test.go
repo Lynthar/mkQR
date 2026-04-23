@@ -13,6 +13,17 @@ func TestDetect(t *testing.T) {
 		{"HTTPS://EXAMPLE.COM", TypeURL},
 		{"example.com", TypeURL},
 		{"github.com/user/repo", TypeURL},
+		// URL with port
+		{"example.com:8080", TypeURL},
+		{"example.com:8080/path", TypeURL},
+		// URL with naked query / fragment
+		{"example.com?q=1", TypeURL},
+		{"example.com?q=hello&x=2", TypeURL},
+		{"example.com#anchor", TypeURL},
+		// Multi-label subdomains with hyphens
+		{"my-site.example.com", TypeURL},
+		{"a.my-site.com", TypeURL},
+		{"deep.sub.domain.example.co.uk", TypeURL},
 
 		// Proxy protocols
 		{"vmess://base64content", TypeProxy},
@@ -57,6 +68,17 @@ func TestDetect(t *testing.T) {
 		{"Hello World", TypeText},
 		{"Some random text", TypeText},
 		{"12345", TypeText},
+		// Intentionally NOT auto-detected as URL (user must add http:// to
+		// force). Bare IPv4 / version strings are too easily confused with
+		// plain content.
+		{"127.0.0.1", TypeText},
+		{"192.168.1.1", TypeText},
+		{"1.2.3", TypeText},
+		// Rejected URL-ish inputs
+		{"example.c", TypeText},      // TLD must be ≥2 letters
+		{"example.123", TypeText},    // TLD must be alphabetic
+		{"example.com:abc", TypeText}, // port must be digits
+		{".example.com", TypeText},   // leading dot (no label before it)
 	}
 
 	for _, tt := range tests {

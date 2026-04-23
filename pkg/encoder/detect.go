@@ -7,8 +7,16 @@ import (
 
 // Package-level regex compiled once at init time. Previously these were
 // compiled inside Detect(), which meant every batch line re-did the work.
+//
+// urlPattern matches bare URLs (no scheme): one-or-more domain labels (1-63
+// chars, alnum + inner hyphens) followed by a ≥2-letter TLD, plus optional
+// :port, /path, ?query, or #fragment. The alphabetic-TLD requirement keeps
+// IPv4 literals ("127.0.0.1") and version strings ("1.2.3") from auto-
+// detecting as URLs; users who want those as URLs should prefix http://
+// explicitly. Explicit schemes (http://, https://, proxy://, etc.) are
+// caught by the prefix checks in Detect() before this pattern is consulted.
 var (
-	urlPattern   = regexp.MustCompile(`^[a-zA-Z0-9]([a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(\.[a-zA-Z]{2,})+(/.*)?$`)
+	urlPattern   = regexp.MustCompile(`^([a-zA-Z0-9]([a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?\.)+[a-zA-Z]{2,}(:\d{1,5})?([/?#].*)?$`)
 	emailPattern = regexp.MustCompile(`^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$`)
 )
 
