@@ -181,6 +181,31 @@ func TestEventEncode(t *testing.T) {
 	}
 }
 
+func TestEventEncodeFoldsLongLines(t *testing.T) {
+	// A 200-character DESCRIPTION exceeds 75 octets several times over;
+	// the output must contain the "\r\n " fold marker and no physical
+	// line may exceed 75 octets.
+	e := &Event{
+		Summary:     "m",
+		Start:       time.Date(2026, 5, 1, 10, 0, 0, 0, time.UTC),
+		Description: strings.Repeat("x", 200),
+		UID:         "fixed@example",
+		DTStamp:     time.Date(2026, 4, 20, 12, 0, 0, 0, time.UTC),
+	}
+	out := e.Encode()
+
+	if !strings.Contains(out, "\r\n ") {
+		t.Error(`expected fold marker "\r\n " in output`)
+	}
+
+	out = strings.TrimSuffix(out, "\r\n")
+	for i, line := range strings.Split(out, "\r\n") {
+		if len(line) > 75 {
+			t.Errorf("physical line %d has %d octets (>75): %q", i, len(line), line)
+		}
+	}
+}
+
 func TestEscapeICal(t *testing.T) {
 	tests := []struct {
 		in, want string

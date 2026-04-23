@@ -128,6 +128,25 @@ func TestVCardEncode(t *testing.T) {
 	}
 }
 
+func TestVCardEncodeFoldsLongLines(t *testing.T) {
+	v := &VCard{
+		FirstName: "Test",
+		Note:      strings.Repeat("x", 200),
+	}
+	out := v.Encode()
+
+	if !strings.Contains(out, "\r\n ") {
+		t.Error(`expected fold marker "\r\n " in output`)
+	}
+
+	out = strings.TrimSuffix(out, "\r\n")
+	for i, line := range strings.Split(out, "\r\n") {
+		if len(line) > 75 {
+			t.Errorf("physical line %d has %d octets (>75): %q", i, len(line), line)
+		}
+	}
+}
+
 func TestVCardUsesCRLF(t *testing.T) {
 	// RFC 2426 §2.4.2 requires CRLF line delimiters.
 	v := VCard{FirstName: "John", LastName: "Doe"}

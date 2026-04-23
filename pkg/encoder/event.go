@@ -3,7 +3,6 @@ package encoder
 import (
 	"crypto/rand"
 	"encoding/hex"
-	"fmt"
 	"strings"
 	"time"
 )
@@ -32,32 +31,32 @@ type Event struct {
 // The VCALENDAR wrapper improves scanner compatibility — iOS accepts bare
 // VEVENT but several Android scanners only recognize the full calendar object.
 //
-// Content lines are delimited by CRLF per RFC 5545 §3.1. UID (§3.8.4.7) and
-// DTSTAMP (§3.8.7.2) are emitted because they are REQUIRED for a VEVENT;
-// scanner apps are lenient, but Outlook and many CalDAV servers reject events
-// that lack them.
+// Content lines are delimited by CRLF per RFC 5545 §3.1 and folded at 75
+// octets via writeFolded. UID (§3.8.4.7) and DTSTAMP (§3.8.7.2) are emitted
+// because they are REQUIRED for a VEVENT; scanner apps are lenient, but
+// Outlook and many CalDAV servers reject events that lack them.
 func (e *Event) Encode() string {
 	var b strings.Builder
 
-	b.WriteString("BEGIN:VCALENDAR\r\n")
-	b.WriteString("VERSION:2.0\r\n")
-	b.WriteString("PRODID:-//mkQR//mkQR//EN\r\n")
-	b.WriteString("BEGIN:VEVENT\r\n")
+	writeFolded(&b, "BEGIN:VCALENDAR")
+	writeFolded(&b, "VERSION:2.0")
+	writeFolded(&b, "PRODID:-//mkQR//mkQR//EN")
+	writeFolded(&b, "BEGIN:VEVENT")
 
 	uid := e.UID
 	if uid == "" {
 		uid = generateUID()
 	}
-	fmt.Fprintf(&b, "UID:%s\r\n", uid)
+	writeFolded(&b, "UID:"+uid)
 
 	dtstamp := e.DTStamp
 	if dtstamp.IsZero() {
 		dtstamp = time.Now()
 	}
-	fmt.Fprintf(&b, "DTSTAMP:%s\r\n", dtstamp.UTC().Format("20060102T150405Z"))
+	writeFolded(&b, "DTSTAMP:"+dtstamp.UTC().Format("20060102T150405Z"))
 
 	if e.Summary != "" {
-		fmt.Fprintf(&b, "SUMMARY:%s\r\n", escapeICal(e.Summary))
+		writeFolded(&b, "SUMMARY:"+escapeICal(e.Summary))
 	}
 
 	if !e.Start.IsZero() {
@@ -66,34 +65,34 @@ func (e *Event) Encode() string {
 			// stored location preserves the user's intended wall-clock date.
 			// Converting through UTC first would shift the date for any
 			// non-UTC timezone whose midnight crosses the UTC day boundary.
-			fmt.Fprintf(&b, "DTSTART;VALUE=DATE:%s\r\n", e.Start.Format("20060102"))
+			writeFolded(&b, "DTSTART;VALUE=DATE:"+e.Start.Format("20060102"))
 		} else {
-			fmt.Fprintf(&b, "DTSTART:%s\r\n", e.Start.UTC().Format("20060102T150405Z"))
+			writeFolded(&b, "DTSTART:"+e.Start.UTC().Format("20060102T150405Z"))
 		}
 	}
 
 	if !e.End.IsZero() {
 		if e.AllDay {
-			fmt.Fprintf(&b, "DTEND;VALUE=DATE:%s\r\n", e.End.Format("20060102"))
+			writeFolded(&b, "DTEND;VALUE=DATE:"+e.End.Format("20060102"))
 		} else {
-			fmt.Fprintf(&b, "DTEND:%s\r\n", e.End.UTC().Format("20060102T150405Z"))
+			writeFolded(&b, "DTEND:"+e.End.UTC().Format("20060102T150405Z"))
 		}
 	}
 
 	if e.Location != "" {
-		fmt.Fprintf(&b, "LOCATION:%s\r\n", escapeICal(e.Location))
+		writeFolded(&b, "LOCATION:"+escapeICal(e.Location))
 	}
 	if e.Description != "" {
-		fmt.Fprintf(&b, "DESCRIPTION:%s\r\n", escapeICal(e.Description))
+		writeFolded(&b, "DESCRIPTION:"+escapeICal(e.Description))
 	}
 	if e.URL != "" {
 		// URLs are specified by RFC 5545 as being formatted per RFC 3986 and
 		// not subject to text escaping.
-		fmt.Fprintf(&b, "URL:%s\r\n", e.URL)
+		writeFolded(&b, "URL:"+e.URL)
 	}
 
-	b.WriteString("END:VEVENT\r\n")
-	b.WriteString("END:VCALENDAR")
+	writeFolded(&b, "END:VEVENT")
+	writeFolded(&b, "END:VCALENDAR")
 
 	return b.String()
 }
