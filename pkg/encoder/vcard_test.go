@@ -77,7 +77,29 @@ func TestVCardEncode(t *testing.T) {
 				Email:     "test@example.com",
 			},
 			contains: []string{
-				"EMAIL;TYPE=HOME:test@example.com",
+				"EMAIL;TYPE=INTERNET,HOME:test@example.com",
+			},
+		},
+		{
+			name: "work email includes INTERNET type",
+			vcard: VCard{
+				FirstName: "Test",
+				EmailWork: "test@work.example",
+			},
+			contains: []string{
+				"EMAIL;TYPE=INTERNET,WORK:test@work.example",
+			},
+		},
+		{
+			// Regression: URLs with ';' (matrix params, jsessionid, etc.) would
+			// previously terminate the vCard property early.
+			name: "website with semicolon is escaped",
+			vcard: VCard{
+				FirstName: "Test",
+				Website:   "https://example.com/page;jsessionid=abc123",
+			},
+			contains: []string{
+				`URL:https://example.com/page\;jsessionid=abc123`,
 			},
 		},
 		{

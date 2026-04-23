@@ -35,7 +35,7 @@ Examples:
 
 func init() {
 	batchCmd.Flags().StringVarP(&batchOutputDir, "output-dir", "O", ".", "Output directory")
-	batchCmd.Flags().StringVar(&batchPrefix, "prefix", "qr_", "Filename prefix")
+	batchCmd.Flags().StringVar(&batchPrefix, "prefix", "qr_", "Filename prefix (avoid path separators or '..'; not sanitized)")
 
 	rootCmd.AddCommand(batchCmd)
 }

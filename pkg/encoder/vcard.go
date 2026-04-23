@@ -66,17 +66,22 @@ func (v *VCard) Encode() string {
 		b.WriteString(fmt.Sprintf("TEL;TYPE=CELL:%s\r\n", v.PhoneMobile))
 	}
 
-	// Email
+	// Email. RFC 2426 §3.3.2: EMAIL default TYPE is INTERNET; emit it
+	// explicitly alongside HOME/WORK so strict parsers don't fall back to
+	// a non-SMTP mailbox type (e.g. X.400).
 	if v.Email != "" {
-		b.WriteString(fmt.Sprintf("EMAIL;TYPE=HOME:%s\r\n", v.Email))
+		b.WriteString(fmt.Sprintf("EMAIL;TYPE=INTERNET,HOME:%s\r\n", v.Email))
 	}
 	if v.EmailWork != "" {
-		b.WriteString(fmt.Sprintf("EMAIL;TYPE=WORK:%s\r\n", v.EmailWork))
+		b.WriteString(fmt.Sprintf("EMAIL;TYPE=INTERNET,WORK:%s\r\n", v.EmailWork))
 	}
 
-	// Website
+	// Website. URL passes through escapeVCard so that an embedded ';' (e.g.
+	// matrix/session parameters like ';jsessionid=...') doesn't terminate
+	// the property early and break vCard structure. Conformant parsers
+	// unescape URI values on read.
 	if v.Website != "" {
-		b.WriteString(fmt.Sprintf("URL:%s\r\n", v.Website))
+		b.WriteString(fmt.Sprintf("URL:%s\r\n", escapeVCard(v.Website)))
 	}
 
 	// Address

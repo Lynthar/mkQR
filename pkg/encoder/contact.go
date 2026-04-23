@@ -2,6 +2,7 @@ package encoder
 
 import (
 	"fmt"
+	"strconv"
 	"strings"
 )
 
@@ -74,10 +75,15 @@ type Geo struct {
 	Query     string // Optional location query/name
 }
 
-// Encode returns the geo: URL
+// Encode returns the geo: URL.
+// Coordinates use FormatFloat with precision -1 so simple values don't pad
+// trailing zeros ("40.0000" was a waste of QR payload) and high-precision
+// GPS data isn't truncated at the %f-default 6 decimals.
 func (g *Geo) Encode() string {
+	lat := strconv.FormatFloat(g.Latitude, 'f', -1, 64)
+	lng := strconv.FormatFloat(g.Longitude, 'f', -1, 64)
 	if g.Query != "" {
-		return fmt.Sprintf("geo:%f,%f?q=%s", g.Latitude, g.Longitude, percentEscape(g.Query))
+		return fmt.Sprintf("geo:%s,%s?q=%s", lat, lng, percentEscape(g.Query))
 	}
-	return fmt.Sprintf("geo:%f,%f", g.Latitude, g.Longitude)
+	return "geo:" + lat + "," + lng
 }

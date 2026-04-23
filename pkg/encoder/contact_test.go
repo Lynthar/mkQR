@@ -156,7 +156,7 @@ func TestGeoEncode(t *testing.T) {
 				Latitude:  40.7128,
 				Longitude: -74.0060,
 			},
-			contains: []string{"geo:40.712800,-74.006000"},
+			contains: []string{"geo:40.7128,-74.006"},
 		},
 		{
 			name: "with query",
@@ -165,7 +165,7 @@ func TestGeoEncode(t *testing.T) {
 				Longitude: 116.4074,
 				Query:     "Beijing",
 			},
-			contains: []string{"geo:39.904200,116.407400?q=Beijing"},
+			contains: []string{"geo:39.9042,116.4074?q=Beijing"},
 		},
 		{
 			name: "query with spaces",
@@ -174,7 +174,27 @@ func TestGeoEncode(t *testing.T) {
 				Longitude: 121.4737,
 				Query:     "Shanghai Tower",
 			},
-			contains: []string{"geo:31.230400,121.473700?q=Shanghai%20Tower"},
+			contains: []string{"geo:31.2304,121.4737?q=Shanghai%20Tower"},
+		},
+		{
+			// High-precision GPS values (eight decimals ≈ 1mm at the equator)
+			// must round-trip without truncation.
+			name: "high-precision coordinates preserved",
+			geo: Geo{
+				Latitude:  40.71281234,
+				Longitude: -74.00601234,
+			},
+			contains: []string{"geo:40.71281234,-74.00601234"},
+		},
+		{
+			// Zero-padded trailing fractional zeros previously wasted QR
+			// payload (e.g., "40.000000" for "40").
+			name: "no trailing zero padding",
+			geo: Geo{
+				Latitude:  40,
+				Longitude: -74,
+			},
+			contains: []string{"geo:40,-74"},
 		},
 	}
 
