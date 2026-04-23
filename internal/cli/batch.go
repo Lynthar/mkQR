@@ -15,7 +15,6 @@ import (
 var (
 	batchOutputDir string
 	batchPrefix    string
-	batchFormat    string
 )
 
 var batchCmd = &cobra.Command{
@@ -37,9 +36,6 @@ Examples:
 func init() {
 	batchCmd.Flags().StringVarP(&batchOutputDir, "output-dir", "O", ".", "Output directory")
 	batchCmd.Flags().StringVar(&batchPrefix, "prefix", "qr_", "Filename prefix")
-	// Note: currently only PNG is supported, flag hidden to avoid confusion
-	batchCmd.Flags().StringVar(&batchFormat, "format", "png", "Output format")
-	batchCmd.Flags().MarkHidden("format")
 
 	rootCmd.AddCommand(batchCmd)
 }
@@ -74,39 +70,10 @@ func runBatch(cmd *cobra.Command, args []string) error {
 	// base64 payload, and hitting the cap aborts the whole batch.
 	scanner.Buffer(make([]byte, 64*1024), 10*1024*1024)
 
-	// Parse error correction level
-	level, err := qr.ParseLevel(errorLevel)
+	gen, err := buildGenerator(cmd.ErrOrStderr())
 	if err != nil {
 		return err
 	}
-
-	// Logo embedding occludes QR modules; force level H so codes stay scannable.
-	if logoPath != "" && level != qr.LevelH {
-		if !quiet {
-			fmt.Fprintln(cmd.ErrOrStderr(), "Note: forcing error correction level H for logo embedding")
-		}
-		level = qr.LevelH
-	}
-
-	opts := qr.Options{
-		Level: level,
-		Size:  outputSize,
-	}
-	if fgColor != "" {
-		c, err := qr.ParseColor(fgColor)
-		if err != nil {
-			return fmt.Errorf("--fg: %w", err)
-		}
-		opts.ForegroundColor = c
-	}
-	if bgColor != "" {
-		c, err := qr.ParseColor(bgColor)
-		if err != nil {
-			return fmt.Errorf("--bg: %w", err)
-		}
-		opts.BackgroundColor = c
-	}
-	gen := qr.NewGenerator(opts)
 
 	count := 0
 	lineNum := 0
@@ -136,8 +103,8 @@ func runBatch(cmd *cobra.Command, args []string) error {
 			continue
 		}
 
-		// Save to file
-		filename := filepath.Join(batchOutputDir, fmt.Sprintf("%s%04d.%s", batchPrefix, count+1, batchFormat))
+		// Save to file (PNG only — SVG batch output isn't wired up yet).
+		filename := filepath.Join(batchOutputDir, fmt.Sprintf("%s%04d.png", batchPrefix, count+1))
 		if logoPath != "" {
 			if err := qr.SavePNGWithLogo(qrCode, filename, outputSize, qr.DefaultLogoOptions(logoPath)); err != nil {
 				fmt.Fprintf(cmd.ErrOrStderr(), "Error saving line %d: %v\n", lineNum, err)

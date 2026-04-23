@@ -25,32 +25,38 @@ func RenderTerminal(w io.Writer, qr *qrcode.QRCode, cfg TerminalConfig) {
 	}
 }
 
-// renderNormal renders using full block characters (2x2 pixels per character)
+// renderNormal renders using full block characters (2 columns per QR module).
+//
+// Variable names describe the QR role, not the glyph's appearance. On dark
+// terminals "██" renders in the foreground color (light) and "  " renders in
+// the background color (dark); so by default modulePx=spaces makes QR modules
+// look dark and bgPx=blocks makes QR background look light — the scannable
+// "dark modules on light" appearance. --invert swaps the pair for light
+// terminals.
 func renderNormal(w io.Writer, bitmap [][]bool, invert bool) {
-	white := "██"
-	black := "  "
+	modulePx := "  "
+	bgPx := "██"
 	if invert {
-		white, black = black, white
+		modulePx, bgPx = bgPx, modulePx
 	}
 
-	// Add quiet zone
 	width := len(bitmap[0])
-	quietLine := strings.Repeat(white, width+4)
+	quietLine := strings.Repeat(bgPx, width+4)
 
 	// Top quiet zone
 	fmt.Fprintln(w, quietLine)
 	fmt.Fprintln(w, quietLine)
 
 	for _, row := range bitmap {
-		fmt.Fprint(w, white+white) // Left quiet zone
+		fmt.Fprint(w, bgPx+bgPx) // Left quiet zone
 		for _, cell := range row {
 			if cell {
-				fmt.Fprint(w, black)
+				fmt.Fprint(w, modulePx)
 			} else {
-				fmt.Fprint(w, white)
+				fmt.Fprint(w, bgPx)
 			}
 		}
-		fmt.Fprintln(w, white+white) // Right quiet zone
+		fmt.Fprintln(w, bgPx+bgPx) // Right quiet zone
 	}
 
 	// Bottom quiet zone
@@ -58,23 +64,27 @@ func renderNormal(w io.Writer, bitmap [][]bool, invert bool) {
 	fmt.Fprintln(w, quietLine)
 }
 
-// renderSmall renders using half-block characters (2 rows per line)
+// renderSmall renders using half-block characters (2 QR rows per terminal line).
+//
+// Same dark-terminal-first convention as renderNormal: bitmap[y][x] == true
+// is a QR module and should render dark, which on a dark terminal means the
+// "empty" (space-colored) half of the glyph. --invert flips that mapping for
+// light terminals.
 func renderSmall(w io.Writer, bitmap [][]bool, invert bool) {
-	// Unicode half blocks: ▀ (upper), ▄ (lower), █ (full), " " (empty)
 	const (
-		upperHalf = "▀"
-		lowerHalf = "▄"
-		fullBlock = "█"
+		upperHalf  = "▀"
+		lowerHalf  = "▄"
+		fullBlock  = "█"
 		emptyBlock = " "
 	)
 
 	height := len(bitmap)
 	width := len(bitmap[0])
 
-	// Quiet zone width
-	qz := 2
+	qz := 2 // quiet zone width in columns
 
-	// Top quiet zone (represented as full blocks in inverted sense)
+	// Quiet zones use the glyph that renders as QR background: fullBlock on
+	// dark terminals (default), emptyBlock on light (invert=true).
 	quietChar := fullBlock
 	if invert {
 		quietChar = emptyBlock
@@ -82,9 +92,7 @@ func renderSmall(w io.Writer, bitmap [][]bool, invert bool) {
 	quietLine := strings.Repeat(quietChar, width+qz*2)
 	fmt.Fprintln(w, quietLine)
 
-	// Process two rows at a time
 	for y := 0; y < height; y += 2 {
-		// Left quiet zone
 		fmt.Fprint(w, strings.Repeat(quietChar, qz))
 
 		for x := 0; x < width; x++ {
@@ -94,14 +102,8 @@ func renderSmall(w io.Writer, bitmap [][]bool, invert bool) {
 				lower = bitmap[y+1][x]
 			}
 
-			// In bitmap: true = black (QR module), false = white (background)
-			// For terminal: we want white background, black modules
-			// Without invert: white=█, black=" "
-			// With invert: white=" ", black="█"
-
 			var char string
 			if invert {
-				// Inverted: black modules should be visible (█), white should be empty
 				switch {
 				case upper && lower:
 					char = fullBlock
@@ -113,7 +115,6 @@ func renderSmall(w io.Writer, bitmap [][]bool, invert bool) {
 					char = emptyBlock
 				}
 			} else {
-				// Normal: white background (█), black modules (space)
 				switch {
 				case !upper && !lower:
 					char = fullBlock
@@ -128,10 +129,8 @@ func renderSmall(w io.Writer, bitmap [][]bool, invert bool) {
 			fmt.Fprint(w, char)
 		}
 
-		// Right quiet zone
 		fmt.Fprintln(w, strings.Repeat(quietChar, qz))
 	}
 
-	// Bottom quiet zone
 	fmt.Fprintln(w, quietLine)
 }

@@ -130,6 +130,41 @@ func ensureHTTPScheme(s string) string {
 	return "https://" + s
 }
 
+// buildGenerator assembles a qr.Generator from the package-level CLI flag
+// values (level, size, colors, logo). Level is forced to H whenever --logo
+// is set, since logo embedding occludes QR modules. noteOut receives the
+// "forcing level H" advisory (typically os.Stderr for single-shot commands
+// and the cobra command's ErrOrStderr for subcommands).
+func buildGenerator(noteOut io.Writer) (*qr.Generator, error) {
+	level, err := qr.ParseLevel(errorLevel)
+	if err != nil {
+		return nil, err
+	}
+	if logoPath != "" && level != qr.LevelH {
+		if !quiet {
+			fmt.Fprintln(noteOut, "Note: forcing error correction level H for logo embedding")
+		}
+		level = qr.LevelH
+	}
+
+	opts := qr.Options{Level: level, Size: outputSize}
+	if fgColor != "" {
+		c, err := qr.ParseColor(fgColor)
+		if err != nil {
+			return nil, fmt.Errorf("--fg: %w", err)
+		}
+		opts.ForegroundColor = c
+	}
+	if bgColor != "" {
+		c, err := qr.ParseColor(bgColor)
+		if err != nil {
+			return nil, fmt.Errorf("--bg: %w", err)
+		}
+		opts.BackgroundColor = c
+	}
+	return qr.NewGenerator(opts), nil
+}
+
 // generateQR is the common QR generation logic
 func generateQR(content string) error {
 	// Validate size
@@ -137,39 +172,10 @@ func generateQR(content string) error {
 		return fmt.Errorf("size must be a positive number, got %d", outputSize)
 	}
 
-	level, err := qr.ParseLevel(errorLevel)
+	gen, err := buildGenerator(os.Stderr)
 	if err != nil {
 		return err
 	}
-
-	// Logo embedding occludes QR modules; force level H so the code stays scannable.
-	if logoPath != "" && level != qr.LevelH {
-		if !quiet {
-			fmt.Fprintln(os.Stderr, "Note: forcing error correction level H for logo embedding")
-		}
-		level = qr.LevelH
-	}
-
-	opts := qr.Options{
-		Level: level,
-		Size:  outputSize,
-	}
-	if fgColor != "" {
-		c, err := qr.ParseColor(fgColor)
-		if err != nil {
-			return fmt.Errorf("--fg: %w", err)
-		}
-		opts.ForegroundColor = c
-	}
-	if bgColor != "" {
-		c, err := qr.ParseColor(bgColor)
-		if err != nil {
-			return fmt.Errorf("--bg: %w", err)
-		}
-		opts.BackgroundColor = c
-	}
-
-	gen := qr.NewGenerator(opts)
 	qrCode, err := gen.Generate(content)
 	if err != nil {
 		return err

@@ -5,6 +5,13 @@ import (
 	"strings"
 )
 
+// Package-level regex compiled once at init time. Previously these were
+// compiled inside Detect(), which meant every batch line re-did the work.
+var (
+	urlPattern   = regexp.MustCompile(`^[a-zA-Z0-9]([a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(\.[a-zA-Z]{2,})+(/.*)?$`)
+	emailPattern = regexp.MustCompile(`^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$`)
+)
+
 // Detect analyzes input and returns its content type
 func Detect(input string) ContentType {
 	input = strings.TrimSpace(input)
@@ -70,13 +77,11 @@ func Detect(input string) ContentType {
 	}
 
 	// Check if it looks like a URL without protocol
-	urlPattern := regexp.MustCompile(`^[a-zA-Z0-9]([a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(\.[a-zA-Z]{2,})+(/.*)?$`)
 	if urlPattern.MatchString(input) {
 		return TypeURL
 	}
 
 	// Check if it looks like an email address
-	emailPattern := regexp.MustCompile(`^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$`)
 	if emailPattern.MatchString(input) {
 		return TypeEmail
 	}
