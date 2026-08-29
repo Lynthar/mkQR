@@ -10,7 +10,7 @@
 
 # AI assistant local settings (not the shared CLAUDE.md)
 .claude/
-
+CLAUDE.md
 # OS
 .DS_Store
 Thumbs.db
