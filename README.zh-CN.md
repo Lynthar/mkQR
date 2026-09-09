@@ -72,6 +72,19 @@ mkqr batch urls.txt -O ./out/ --prefix "node_"
 `red` `green` `blue` `yellow` `cyan` `magenta` `transparent`），也可以直接给十六进制值；
 logo 默认占二维码宽度的 20%，超过 35% 直接拒绝。没有配置文件，没有环境变量。
 
+## 作为 Go 库使用
+
+载荷编码器导出在 `github.com/Lynthar/mkQR/pkg/encoder`，想直接拿到扫码端认的字符串（WiFi、vCard、OTP、邮件、短信、地理位置、电话、日历事件）而不经由 CLI 时可以直接 import。
+
+```go
+import "github.com/Lynthar/mkQR/pkg/encoder"
+
+s := (&encoder.WiFi{SSID: "Home", Password: "secret", Encryption: encoder.WPA}).Encode()
+// s == "WIFI:T:WPA;S:Home;P:secret;;"
+```
+
+自动识别也已导出：`encoder.Detect()` / `encoder.DetectAndDescribe()`。
+
 ## 能力边界
 
 - **只生成，不解码。**

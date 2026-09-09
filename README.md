@@ -77,6 +77,19 @@ are accepted (`black`, `white`, `red`, `green`, `blue`, `yellow`, `cyan`,
 width and is refused above 35%. There's no config file and no environment
 variables.
 
+## Use as a Go library
+
+The payload encoders are exported under `github.com/Lynthar/mkQR/pkg/encoder` and can be imported directly if you want to produce the wire-format strings (WiFi, vCard, OTP, email, SMS, geo, phone, event) without a CLI shell-out.
+
+```go
+import "github.com/Lynthar/mkQR/pkg/encoder"
+
+s := (&encoder.WiFi{SSID: "Home", Password: "secret", Encryption: encoder.WPA}).Encode()
+// s == "WIFI:T:WPA;S:Home;P:secret;;"
+```
+
+Auto-detection is also exposed via `encoder.Detect()` / `encoder.DetectAndDescribe()`.
+
 ## Limitations
 
 - **Generate only.** It doesn't decode QR codes.
