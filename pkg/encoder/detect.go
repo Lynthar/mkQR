@@ -98,24 +98,25 @@ func Detect(input string) ContentType {
 	return TypeText
 }
 
+// descriptions carries one label per ContentType. A new type needs an entry
+// here as well, or DetectAndDescribe returns an empty description for it.
+var descriptions = map[ContentType]string{
+	TypeText:    "Plain text",
+	TypeURL:     "URL",
+	TypeWiFi:    "WiFi network",
+	TypeVCard:   "Contact card (vCard)",
+	TypeEmail:   "Email",
+	TypePhone:   "Phone number",
+	TypeSMS:     "SMS message",
+	TypeOTP:     "One-time password (2FA)",
+	TypeGeo:     "Geographic location",
+	TypeEvent:   "Calendar event",
+	TypeProxy:   "Proxy configuration",
+	TypeUnknown: "Unknown",
+}
+
 // DetectAndDescribe returns the detected type and a human-readable description
 func DetectAndDescribe(input string) (ContentType, string) {
 	contentType := Detect(input)
-
-	descriptions := map[ContentType]string{
-		TypeText:    "Plain text",
-		TypeURL:     "URL",
-		TypeWiFi:    "WiFi network",
-		TypeVCard:   "Contact card (vCard)",
-		TypeEmail:   "Email",
-		TypePhone:   "Phone number",
-		TypeSMS:     "SMS message",
-		TypeOTP:     "One-time password (2FA)",
-		TypeGeo:     "Geographic location",
-		TypeEvent:   "Calendar event",
-		TypeProxy:   "Proxy configuration",
-		TypeUnknown: "Unknown",
-	}
-
 	return contentType, descriptions[contentType]
 }

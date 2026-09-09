@@ -48,6 +48,11 @@ func runBatch(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("size must be a positive number, got %d", outputSize)
 	}
 
+	// -o names a single file; batch names one file per line under --output-dir.
+	if outputFile != "" && !quiet {
+		fmt.Fprintln(cmd.ErrOrStderr(), "Note: batch writes PNG files into --output-dir; -o is ignored")
+	}
+
 	// Create output directory
 	if err := os.MkdirAll(batchOutputDir, 0755); err != nil {
 		return fmt.Errorf("failed to create output directory: %w", err)
@@ -76,6 +81,7 @@ func runBatch(cmd *cobra.Command, args []string) error {
 	}
 
 	count := 0
+	failed := 0
 	lineNum := 0
 
 	for scanner.Scan() {
@@ -100,19 +106,23 @@ func runBatch(cmd *cobra.Command, args []string) error {
 		qrCode, err := gen.Generate(content)
 		if err != nil {
 			fmt.Fprintf(cmd.ErrOrStderr(), "Error on line %d: %v\n", lineNum, err)
+			failed++
 			continue
 		}
 
-		// Save to file (PNG only — SVG batch output isn't wired up yet).
-		filename := filepath.Join(batchOutputDir, fmt.Sprintf("%s%04d.png", batchPrefix, count+1))
+		// PNG only (SVG batch output isn't wired up). The number is the input
+		// line, so every name points back at the line that produced it.
+		filename := filepath.Join(batchOutputDir, fmt.Sprintf("%s%04d.png", batchPrefix, lineNum))
 		if logoPath != "" {
 			if err := qr.SavePNGWithLogo(qrCode, filename, outputSize, qr.DefaultLogoOptions(logoPath)); err != nil {
 				fmt.Fprintf(cmd.ErrOrStderr(), "Error saving line %d: %v\n", lineNum, err)
+				failed++
 				continue
 			}
 		} else {
 			if err := qr.SavePNG(qrCode, filename, outputSize); err != nil {
 				fmt.Fprintf(cmd.ErrOrStderr(), "Error saving line %d: %v\n", lineNum, err)
+				failed++
 				continue
 			}
 		}
@@ -124,7 +134,7 @@ func runBatch(cmd *cobra.Command, args []string) error {
 			if runes := []rune(preview); len(runes) > 40 {
 				preview = string(runes[:40]) + "..."
 			}
-			fmt.Fprintf(cmd.ErrOrStderr(), "[%d] %s -> %s\n", count+1, preview, filename)
+			fmt.Fprintf(cmd.ErrOrStderr(), "[%d] %s -> %s\n", lineNum, preview, filename)
 		}
 
 		count++
@@ -136,6 +146,10 @@ func runBatch(cmd *cobra.Command, args []string) error {
 
 	if !quiet {
 		fmt.Fprintf(cmd.ErrOrStderr(), "\nGenerated %d QR codes in %s\n", count, batchOutputDir)
+	}
+
+	if failed > 0 {
+		return fmt.Errorf("%d of %d lines failed", failed, count+failed)
 	}
 
 	return nil

@@ -1,6 +1,7 @@
 package qr
 
 import (
+	"bufio"
 	"fmt"
 	"io"
 	"strings"
@@ -14,15 +15,22 @@ type TerminalConfig struct {
 	Small  bool // Use half-block characters for compact output
 }
 
-// RenderTerminal renders a QR code to the terminal
-func RenderTerminal(w io.Writer, qr *qrcode.QRCode, cfg TerminalConfig) {
+// RenderTerminal renders a QR code to the terminal.
+//
+// Every write goes through a buffer whose first error is sticky; the returned
+// error is that one. Callers must not drop it — dropping it reports success on
+// a full disk or a closed pipe.
+func RenderTerminal(w io.Writer, qr *qrcode.QRCode, cfg TerminalConfig) error {
+	buffered := bufio.NewWriter(w)
 	bitmap := qr.Bitmap()
 
 	if cfg.Small {
-		renderSmall(w, bitmap, cfg.Invert)
+		renderSmall(buffered, bitmap, cfg.Invert)
 	} else {
-		renderNormal(w, bitmap, cfg.Invert)
+		renderNormal(buffered, bitmap, cfg.Invert)
 	}
+
+	return buffered.Flush()
 }
 
 // renderNormal renders using full block characters (2 columns per QR module).

@@ -45,7 +45,9 @@ func cleanSecret(s string) string {
 	return strings.ReplaceAll(strings.ReplaceAll(s, " ", ""), "-", "")
 }
 
-// ValidateSecret checks if the secret is a valid base32 string
+// ValidateSecret reports whether secret is valid base32 (A-Z, 2-7) once
+// spaces and hyphens are stripped. Encode cannot call it (no error return),
+// so callers must.
 func ValidateSecret(secret string) error {
 	cleaned := cleanSecret(secret)
 	if cleaned == "" {
@@ -59,6 +61,10 @@ func ValidateSecret(secret string) error {
 
 // Encode returns the otpauth:// URL
 // Format: otpauth://TYPE/LABEL?PARAMETERS
+//
+// The secret is only stripped of spaces and hyphens, never validated: run
+// ValidateSecret first, or an invalid secret rides into the URL and the
+// authenticator app generates wrong codes with no error anywhere.
 func (o *OTP) Encode() string {
 	otpType := o.Type
 	if otpType == "" {

@@ -14,14 +14,18 @@ const (
 	NoPass WiFiEncryption = "nopass"
 )
 
-// ParseWiFiEncryption parses encryption type from string
+// ParseWiFiEncryption parses encryption type from string. The empty string
+// means "unspecified" and is returned as such, so WiFi.Encode picks nopass or
+// WPA from the password; answering NoPass here would contradict it.
 func ParseWiFiEncryption(s string) (WiFiEncryption, error) {
 	switch strings.ToUpper(s) {
+	case "":
+		return "", nil
 	case "WPA", "WPA2", "WPA3", "WPA2/WPA3":
 		return WPA, nil
 	case "WEP":
 		return WEP, nil
-	case "NOPASS", "NONE", "OPEN", "":
+	case "NOPASS", "NONE", "OPEN":
 		return NoPass, nil
 	default:
 		return "", fmt.Errorf("unknown encryption type: %s (use WPA, WEP, or nopass)", s)

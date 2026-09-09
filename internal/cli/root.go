@@ -85,19 +85,17 @@ func runRoot(cmd *cobra.Command, args []string) error {
 	if len(args) > 0 {
 		content = args[0]
 	} else {
-		// Check if stdin has data
-		stat, _ := os.Stdin.Stat()
-		if (stat.Mode() & os.ModeCharDevice) == 0 {
-			// Reading from pipe
-			reader := bufio.NewReader(os.Stdin)
-			data, err := io.ReadAll(reader)
-			if err != nil {
-				return fmt.Errorf("failed to read from stdin: %w", err)
-			}
-			content = strings.TrimSpace(string(data))
-		} else {
+		// A terminal on stdin means no piped input; so does a stdin we can't
+		// stat at all (fd 0 closed by a daemon or CI runner).
+		stat, err := os.Stdin.Stat()
+		if err != nil || (stat.Mode()&os.ModeCharDevice) != 0 {
 			return cmd.Help()
 		}
+		data, err := io.ReadAll(bufio.NewReader(os.Stdin))
+		if err != nil {
+			return fmt.Errorf("failed to read from stdin: %w", err)
+		}
+		content = strings.TrimSpace(string(data))
 	}
 
 	if content == "" {
@@ -223,7 +221,7 @@ func generateQR(content string) error {
 			Invert: invert,
 			Small:  small,
 		}
-		qr.RenderTerminal(os.Stdout, qrCode, cfg)
+		return qr.RenderTerminal(os.Stdout, qrCode, cfg)
 	}
 
 	return nil

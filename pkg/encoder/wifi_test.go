@@ -89,7 +89,7 @@ func TestParseWiFiEncryption(t *testing.T) {
 		{"NOPASS", NoPass, false},
 		{"none", NoPass, false},
 		{"open", NoPass, false},
-		{"", NoPass, false},
+		{"", "", false},
 		{"invalid", "", true},
 	}
 
@@ -107,6 +107,29 @@ func TestParseWiFiEncryption(t *testing.T) {
 				if result != tt.expected {
 					t.Errorf("ParseWiFiEncryption(%q) = %q, want %q", tt.input, result, tt.expected)
 				}
+			}
+		})
+	}
+}
+
+// The unspecified value from ParseWiFiEncryption must encode exactly like a
+// WiFi with no Encryption set, otherwise the two rules for "empty" disagree.
+func TestParseWiFiEncryptionEmptyDefersToEncode(t *testing.T) {
+	parsed, err := ParseWiFiEncryption("")
+	if err != nil {
+		t.Fatalf("ParseWiFiEncryption(\"\") error: %v", err)
+	}
+
+	tests := []struct{ name, password string }{
+		{"open", ""},
+		{"protected", "secret"},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := (&WiFi{SSID: "Net", Password: tt.password, Encryption: parsed}).Encode()
+			want := (&WiFi{SSID: "Net", Password: tt.password}).Encode()
+			if got != want {
+				t.Errorf("Encode() with parsed empty = %q, want %q", got, want)
 			}
 		})
 	}

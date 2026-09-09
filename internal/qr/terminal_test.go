@@ -2,6 +2,7 @@ package qr
 
 import (
 	"bytes"
+	"errors"
 	"strings"
 	"testing"
 )
@@ -120,5 +121,26 @@ func TestRenderSmallOddRows(t *testing.T) {
 
 	if len(buf.String()) == 0 {
 		t.Error("renderSmall() with odd rows produced empty output")
+	}
+}
+
+type failingWriter struct{ err error }
+
+func (f failingWriter) Write(p []byte) (int, error) { return 0, f.err }
+
+// Pins the write-error path: a discarded error here makes `mkqr text hi` report
+// success on a full disk or a closed pipe.
+func TestRenderTerminalReportsWriteError(t *testing.T) {
+	gen := NewGenerator(DefaultOptions())
+	qr, err := gen.Generate("Test")
+	if err != nil {
+		t.Fatalf("Generate() error: %v", err)
+	}
+
+	want := errors.New("write failed")
+	for _, cfg := range []TerminalConfig{{}, {Small: true}, {Invert: true}} {
+		if err := RenderTerminal(failingWriter{want}, qr, cfg); !errors.Is(err, want) {
+			t.Errorf("RenderTerminal(%+v) error = %v, want %v", cfg, err, want)
+		}
 	}
 }
