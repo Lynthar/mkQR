@@ -128,12 +128,24 @@ func ensureHTTPScheme(s string) string {
 	return "https://" + s
 }
 
+// previewOf shortens s for a notice line, cutting on rune boundaries so
+// multi-byte text (e.g. CJK) is never sliced mid-character.
+func previewOf(s string, limit int) string {
+	if runes := []rune(s); len(runes) > limit {
+		return string(runes[:limit]) + "..."
+	}
+	return s
+}
+
 // buildGenerator assembles a qr.Generator from the package-level CLI flag
 // values (level, size, colors, logo). Level is forced to H whenever --logo
 // is set, since logo embedding occludes QR modules. noteOut receives the
 // "forcing level H" advisory (typically os.Stderr for single-shot commands
 // and the cobra command's ErrOrStderr for subcommands).
 func buildGenerator(noteOut io.Writer) (*qr.Generator, error) {
+	if outputSize <= 0 {
+		return nil, fmt.Errorf("size must be a positive number, got %d", outputSize)
+	}
 	level, err := qr.ParseLevel(errorLevel)
 	if err != nil {
 		return nil, err
@@ -165,11 +177,6 @@ func buildGenerator(noteOut io.Writer) (*qr.Generator, error) {
 
 // generateQR is the common QR generation logic
 func generateQR(content string) error {
-	// Validate size
-	if outputSize <= 0 {
-		return fmt.Errorf("size must be a positive number, got %d", outputSize)
-	}
-
 	gen, err := buildGenerator(os.Stderr)
 	if err != nil {
 		return err

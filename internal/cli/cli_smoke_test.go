@@ -5,6 +5,27 @@ import (
 	"testing"
 )
 
+func TestPreviewOf(t *testing.T) {
+	tests := []struct {
+		name  string
+		in    string
+		limit int
+		want  string
+	}{
+		{"short", "hello", 10, "hello"},
+		{"exactly at limit", "hello", 5, "hello"},
+		{"over limit", "hello world", 5, "hello..."},
+		{"cuts on rune boundary", "你好世界", 2, "你好..."},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := previewOf(tt.in, tt.limit); got != tt.want {
+				t.Errorf("previewOf(%q, %d) = %q, want %q", tt.in, tt.limit, got, tt.want)
+			}
+		})
+	}
+}
+
 func TestEnsureHTTPScheme(t *testing.T) {
 	tests := []struct {
 		in, want string
@@ -29,8 +50,8 @@ func TestEnsureHTTPScheme(t *testing.T) {
 	}
 }
 
-// TestSubcommandHelpDoesNotPanic verifies every subcommand can render its
-// --help without panicking.
+// TestSubcommandHelpDoesNotPanic verifies every registered subcommand can
+// render its --help without panicking.
 //
 // Cobra detects short-flag collisions between a subcommand flag and a root
 // persistent flag only at lookup time (not compile time); the panic happens
@@ -41,13 +62,14 @@ func TestEnsureHTTPScheme(t *testing.T) {
 //
 // The currently-reserved short letters (case-sensitive) are o, l, q, v.
 func TestSubcommandHelpDoesNotPanic(t *testing.T) {
-	subcommands := []string{
-		"wifi", "vcard", "otp", "email", "phone", "sms", "geo",
-		"url", "text", "event", "batch",
+	cmds := rootCmd.Commands()
+	if len(cmds) == 0 {
+		t.Fatal("no subcommands registered")
 	}
-	for _, name := range subcommands {
-		name := name
+	for _, sub := range cmds {
+		name := sub.Name()
 		t.Run(name, func(t *testing.T) {
+			unlatchHelp(t, sub)
 			var buf bytes.Buffer
 			cmd := GetRootCmd()
 			cmd.SetOut(&buf)

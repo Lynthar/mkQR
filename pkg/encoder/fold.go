@@ -17,7 +17,7 @@ import (
 //
 // Callers pass the logical content line WITHOUT a trailing CRLF. Mixing
 // raw CR/LF into the input would corrupt the output; upstream escaping
-// (escapeICal / escapeVCard) already handles user-supplied newlines.
+// (escapeText) already handles user-supplied newlines.
 func writeFolded(b *strings.Builder, line string) {
 	const limit = 75
 

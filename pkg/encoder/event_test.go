@@ -205,21 +205,3 @@ func TestEventEncodeFoldsLongLines(t *testing.T) {
 		}
 	}
 }
-
-func TestEscapeICal(t *testing.T) {
-	tests := []struct {
-		in, want string
-	}{
-		{"simple", "simple"},
-		{`with\backslash`, `with\\backslash`},
-		{"with,comma", `with\,comma`},
-		{"with;semi", `with\;semi`},
-		{"with\nnewline", `with\nnewline`},
-		{`all\;,chars\nplus`, `all\\\;\,chars\\nplus`},
-	}
-	for _, tt := range tests {
-		if got := escapeICal(tt.in); got != tt.want {
-			t.Errorf("escapeICal(%q) = %q, want %q", tt.in, got, tt.want)
-		}
-	}
-}

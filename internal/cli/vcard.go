@@ -78,15 +78,8 @@ func runVCard(cmd *cobra.Command, args []string) error {
 	content := vcard.Encode()
 
 	if !quiet {
-		var name string
-		switch {
-		case vcardFirstName != "" && vcardLastName != "":
-			name = vcardFirstName + " " + vcardLastName
-		case vcardFirstName != "":
-			name = vcardFirstName
-		case vcardLastName != "":
-			name = vcardLastName
-		default:
+		name := vcard.FormattedName()
+		if name == "" {
 			name = vcardEmail // fallback to email if no name
 		}
 		fmt.Fprintf(cmd.ErrOrStderr(), "Contact: %s\n", name)

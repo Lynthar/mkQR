@@ -31,26 +31,16 @@ func (v *VCard) Encode() string {
 
 	// Name
 	if v.FirstName != "" || v.LastName != "" {
-		writeFolded(&b, "N:"+escapeVCard(v.LastName)+";"+escapeVCard(v.FirstName)+";;;")
-		// Build FN (formatted name) properly to avoid extra spaces
-		var fn string
-		switch {
-		case v.FirstName != "" && v.LastName != "":
-			fn = v.FirstName + " " + v.LastName
-		case v.FirstName != "":
-			fn = v.FirstName
-		default:
-			fn = v.LastName
-		}
-		writeFolded(&b, "FN:"+escapeVCard(fn))
+		writeFolded(&b, "N:"+escapeText(v.LastName)+";"+escapeText(v.FirstName)+";;;")
+		writeFolded(&b, "FN:"+escapeText(v.FormattedName()))
 	}
 
 	if v.Organization != "" {
-		writeFolded(&b, "ORG:"+escapeVCard(v.Organization))
+		writeFolded(&b, "ORG:"+escapeText(v.Organization))
 	}
 
 	if v.Title != "" {
-		writeFolded(&b, "TITLE:"+escapeVCard(v.Title))
+		writeFolded(&b, "TITLE:"+escapeText(v.Title))
 	}
 
 	if v.Phone != "" {
@@ -73,20 +63,20 @@ func (v *VCard) Encode() string {
 		writeFolded(&b, "EMAIL;TYPE=INTERNET,WORK:"+v.EmailWork)
 	}
 
-	// Website. URL passes through escapeVCard so that an embedded ';' (e.g.
+	// Website. URL passes through escapeText so that an embedded ';' (e.g.
 	// matrix/session parameters like ';jsessionid=...') doesn't terminate
 	// the property early and break vCard structure. Conformant parsers
 	// unescape URI values on read.
 	if v.Website != "" {
-		writeFolded(&b, "URL:"+escapeVCard(v.Website))
+		writeFolded(&b, "URL:"+escapeText(v.Website))
 	}
 
 	if v.Address != "" {
-		writeFolded(&b, "ADR:;;"+escapeVCard(v.Address)+";;;;")
+		writeFolded(&b, "ADR:;;"+escapeText(v.Address)+";;;;")
 	}
 
 	if v.Note != "" {
-		writeFolded(&b, "NOTE:"+escapeVCard(v.Note))
+		writeFolded(&b, "NOTE:"+escapeText(v.Note))
 	}
 
 	writeFolded(&b, "END:VCARD")
@@ -94,13 +84,15 @@ func (v *VCard) Encode() string {
 	return b.String()
 }
 
-// escapeVCard escapes special characters for vCard format
-func escapeVCard(s string) string {
-	replacer := strings.NewReplacer(
-		`\`, `\\`,
-		`,`, `\,`,
-		`;`, `\;`,
-		"\n", `\n`,
-	)
-	return replacer.Replace(s)
+// FormattedName is the FN value Encode emits: "First Last", or whichever of
+// the two is set; empty when neither is.
+func (v *VCard) FormattedName() string {
+	switch {
+	case v.FirstName != "" && v.LastName != "":
+		return v.FirstName + " " + v.LastName
+	case v.FirstName != "":
+		return v.FirstName
+	default:
+		return v.LastName
+	}
 }

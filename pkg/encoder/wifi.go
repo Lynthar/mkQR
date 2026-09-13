@@ -40,21 +40,25 @@ type WiFi struct {
 	Hidden     bool
 }
 
+// EffectiveEncryption is the type Encode emits: Encryption when set, otherwise
+// NoPass without a password and WPA with one.
+func (w *WiFi) EffectiveEncryption() WiFiEncryption {
+	if w.Encryption != "" {
+		return w.Encryption
+	}
+	if w.Password == "" {
+		return NoPass
+	}
+	return WPA
+}
+
 // Encode returns the WiFi QR code format string
 // Format: WIFI:T:<encryption>;S:<ssid>;P:<password>;H:<hidden>;;
 func (w *WiFi) Encode() string {
 	// Escape special characters in SSID and password
 	ssid := escapeWiFiString(w.SSID)
 	password := escapeWiFiString(w.Password)
-
-	encryption := w.Encryption
-	if encryption == "" {
-		if w.Password == "" {
-			encryption = NoPass
-		} else {
-			encryption = WPA
-		}
-	}
+	encryption := w.EffectiveEncryption()
 
 	hidden := ""
 	if w.Hidden {

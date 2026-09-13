@@ -165,9 +165,9 @@ func TestVCardNoExtraSpaceInFN(t *testing.T) {
 		lastName  string
 		wantFN    string
 	}{
-		{"both names", "John", "Doe", "FN:John Doe"},
-		{"first only", "John", "", "FN:John"},
-		{"last only", "", "Doe", "FN:Doe"},
+		{"both names", "John", "Doe", "John Doe"},
+		{"first only", "John", "", "John"},
+		{"last only", "", "Doe", "Doe"},
 	}
 
 	for _, tt := range tests {
@@ -176,35 +176,16 @@ func TestVCardNoExtraSpaceInFN(t *testing.T) {
 				FirstName: tt.firstName,
 				LastName:  tt.lastName,
 			}
+			if got := vcard.FormattedName(); got != tt.wantFN {
+				t.Errorf("FormattedName() = %q, want %q", got, tt.wantFN)
+			}
 			result := vcard.Encode()
-			if !strings.Contains(result, tt.wantFN) {
-				t.Errorf("Expected %q in result, got:\n%s", tt.wantFN, result)
+			if !strings.Contains(result, "FN:"+tt.wantFN+"\r\n") {
+				t.Errorf("Expected FN:%s in result, got:\n%s", tt.wantFN, result)
 			}
 			// Make sure there's no double space or trailing space in FN
 			if strings.Contains(result, "FN: ") || strings.Contains(result, "FN:  ") {
 				t.Errorf("FN has leading space in result:\n%s", result)
-			}
-		})
-	}
-}
-
-func TestEscapeVCard(t *testing.T) {
-	tests := []struct {
-		input    string
-		expected string
-	}{
-		{"simple", "simple"},
-		{`with\backslash`, `with\\backslash`},
-		{"with,comma", `with\,comma`},
-		{"with;semicolon", `with\;semicolon`},
-		{"with\nnewline", `with\nnewline`},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.input, func(t *testing.T) {
-			result := escapeVCard(tt.input)
-			if result != tt.expected {
-				t.Errorf("escapeVCard(%q) = %q, want %q", tt.input, result, tt.expected)
 			}
 		})
 	}

@@ -15,6 +15,13 @@ const (
 	HOTP OTPType = "hotp" // Counter-based OTP
 )
 
+// Key URI Format defaults; Encode omits a parameter equal to its default.
+const (
+	DefaultAlgorithm = "SHA1"
+	DefaultDigits    = 6
+	DefaultPeriod    = 30
+)
+
 // OTP encodes one-time password configuration for authenticator apps
 type OTP struct {
 	Type      OTPType
@@ -89,15 +96,15 @@ func (o *OTP) Encode() string {
 		params = append(params, "issuer="+percentEscape(o.Issuer))
 	}
 
-	if o.Algorithm != "" && o.Algorithm != "SHA1" {
+	if o.Algorithm != "" && o.Algorithm != DefaultAlgorithm {
 		params = append(params, "algorithm="+o.Algorithm)
 	}
 
-	if o.Digits != 0 && o.Digits != 6 {
+	if o.Digits != 0 && o.Digits != DefaultDigits {
 		params = append(params, fmt.Sprintf("digits=%d", o.Digits))
 	}
 
-	if otpType == TOTP && o.Period != 0 && o.Period != 30 {
+	if otpType == TOTP && o.Period != 0 && o.Period != DefaultPeriod {
 		params = append(params, fmt.Sprintf("period=%d", o.Period))
 	}
 

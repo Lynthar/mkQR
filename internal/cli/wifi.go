@@ -44,15 +44,9 @@ func init() {
 }
 
 func runWifi(cmd *cobra.Command, args []string) error {
-	encryption := encoder.WPA
-	if wifiEncryption != "" {
-		var err error
-		encryption, err = encoder.ParseWiFiEncryption(wifiEncryption)
-		if err != nil {
-			return err
-		}
-	} else if wifiPassword == "" {
-		encryption = encoder.NoPass
+	encryption, err := encoder.ParseWiFiEncryption(wifiEncryption)
+	if err != nil {
+		return err
 	}
 
 	wifi := &encoder.WiFi{
@@ -65,7 +59,7 @@ func runWifi(cmd *cobra.Command, args []string) error {
 	content := wifi.Encode()
 
 	if !quiet {
-		fmt.Fprintf(cmd.ErrOrStderr(), "WiFi: %s (%s)\n", wifiSSID, encryption)
+		fmt.Fprintf(cmd.ErrOrStderr(), "WiFi: %s (%s)\n", wifiSSID, wifi.EffectiveEncryption())
 	}
 
 	return generateQR(content)

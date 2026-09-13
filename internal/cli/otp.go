@@ -37,9 +37,9 @@ func init() {
 	otpCmd.Flags().StringVarP(&otpSecret, "secret", "s", "", "Secret key (base32 encoded) [required]")
 	otpCmd.Flags().StringVarP(&otpIssuer, "issuer", "i", "", "Service/issuer name [required]")
 	otpCmd.Flags().StringVarP(&otpAccount, "account", "a", "", "Account name/email [required]")
-	otpCmd.Flags().StringVar(&otpAlgorithm, "algorithm", "SHA1", "Hash algorithm (SHA1/SHA256/SHA512)")
-	otpCmd.Flags().IntVar(&otpDigits, "digits", 6, "Number of digits (6 or 8)")
-	otpCmd.Flags().IntVar(&otpPeriod, "period", 30, "Time period in seconds (TOTP)")
+	otpCmd.Flags().StringVar(&otpAlgorithm, "algorithm", encoder.DefaultAlgorithm, "Hash algorithm (SHA1/SHA256/SHA512)")
+	otpCmd.Flags().IntVar(&otpDigits, "digits", encoder.DefaultDigits, "Number of digits (6 or 8)")
+	otpCmd.Flags().IntVar(&otpPeriod, "period", encoder.DefaultPeriod, "Time period in seconds (TOTP)")
 	otpCmd.Flags().IntVar(&otpCounter, "counter", 0, "Initial counter value (HOTP)")
 	otpCmd.Flags().BoolVar(&otpTypeHOTP, "hotp", false, "Use HOTP (counter-based) instead of TOTP")
 

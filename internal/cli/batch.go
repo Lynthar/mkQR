@@ -43,9 +43,9 @@ func init() {
 func runBatch(cmd *cobra.Command, args []string) error {
 	inputFile := args[0]
 
-	// Validate size
-	if outputSize <= 0 {
-		return fmt.Errorf("size must be a positive number, got %d", outputSize)
+	gen, err := buildGenerator(cmd.ErrOrStderr())
+	if err != nil {
+		return err
 	}
 
 	// -o names a single file; batch names one file per line under --output-dir.
@@ -74,11 +74,6 @@ func runBatch(cmd *cobra.Command, args []string) error {
 	// subscription line can easily exceed that when it carries a large
 	// base64 payload, and hitting the cap aborts the whole batch.
 	scanner.Buffer(make([]byte, 64*1024), 10*1024*1024)
-
-	gen, err := buildGenerator(cmd.ErrOrStderr())
-	if err != nil {
-		return err
-	}
 
 	count := 0
 	failed := 0
@@ -128,13 +123,7 @@ func runBatch(cmd *cobra.Command, args []string) error {
 		}
 
 		if !quiet {
-			// Truncate by runes, not bytes, so multi-byte characters (e.g.
-			// CJK) aren't sliced mid-character into garbled output.
-			preview := line
-			if runes := []rune(preview); len(runes) > 40 {
-				preview = string(runes[:40]) + "..."
-			}
-			fmt.Fprintf(cmd.ErrOrStderr(), "[%d] %s -> %s\n", lineNum, preview, filename)
+			fmt.Fprintf(cmd.ErrOrStderr(), "[%d] %s -> %s\n", lineNum, previewOf(line, 40), filename)
 		}
 
 		count++

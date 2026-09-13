@@ -56,7 +56,7 @@ func (e *Event) Encode() string {
 	writeFolded(&b, "DTSTAMP:"+dtstamp.UTC().Format("20060102T150405Z"))
 
 	if e.Summary != "" {
-		writeFolded(&b, "SUMMARY:"+escapeICal(e.Summary))
+		writeFolded(&b, "SUMMARY:"+escapeText(e.Summary))
 	}
 
 	if !e.Start.IsZero() {
@@ -80,10 +80,10 @@ func (e *Event) Encode() string {
 	}
 
 	if e.Location != "" {
-		writeFolded(&b, "LOCATION:"+escapeICal(e.Location))
+		writeFolded(&b, "LOCATION:"+escapeText(e.Location))
 	}
 	if e.Description != "" {
-		writeFolded(&b, "DESCRIPTION:"+escapeICal(e.Description))
+		writeFolded(&b, "DESCRIPTION:"+escapeText(e.Description))
 	}
 	if e.URL != "" {
 		// URLs are specified by RFC 5545 as being formatted per RFC 3986 and
@@ -104,15 +104,4 @@ func generateUID() string {
 	var buf [16]byte
 	_, _ = rand.Read(buf[:])
 	return hex.EncodeToString(buf[:]) + "@mkqr"
-}
-
-// escapeICal escapes the special characters listed in RFC 5545 §3.3.11.
-func escapeICal(s string) string {
-	r := strings.NewReplacer(
-		`\`, `\\`,
-		`;`, `\;`,
-		`,`, `\,`,
-		"\n", `\n`,
-	)
-	return r.Replace(s)
 }

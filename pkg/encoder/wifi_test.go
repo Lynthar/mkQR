@@ -1,6 +1,7 @@
 package encoder
 
 import (
+	"strings"
 	"testing"
 )
 
@@ -107,6 +108,36 @@ func TestParseWiFiEncryption(t *testing.T) {
 				if result != tt.expected {
 					t.Errorf("ParseWiFiEncryption(%q) = %q, want %q", tt.input, result, tt.expected)
 				}
+			}
+		})
+	}
+}
+
+// Eight cells of (Encryption set or not) × (password or not): the type the
+// payload carries must be the one EffectiveEncryption reports.
+func TestWiFiEffectiveEncryption(t *testing.T) {
+	tests := []struct {
+		encryption WiFiEncryption
+		password   string
+		want       WiFiEncryption
+	}{
+		{"", "", NoPass},
+		{"", "x", WPA},
+		{WPA, "", WPA},
+		{WPA, "x", WPA},
+		{WEP, "", WEP},
+		{WEP, "x", WEP},
+		{NoPass, "", NoPass},
+		{NoPass, "x", NoPass},
+	}
+	for _, tt := range tests {
+		t.Run(string(tt.encryption)+"/"+tt.password, func(t *testing.T) {
+			w := &WiFi{SSID: "Net", Password: tt.password, Encryption: tt.encryption}
+			if got := w.EffectiveEncryption(); got != tt.want {
+				t.Errorf("EffectiveEncryption() = %q, want %q", got, tt.want)
+			}
+			if got, want := w.Encode(), "WIFI:T:"+string(tt.want)+";"; !strings.HasPrefix(got, want) {
+				t.Errorf("Encode() = %q, want prefix %q", got, want)
 			}
 		})
 	}

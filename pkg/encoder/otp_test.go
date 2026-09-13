@@ -126,9 +126,9 @@ func TestOTPEncodeDefaultsNotIncluded(t *testing.T) {
 		Secret:    "SECRET",
 		Issuer:    "App",
 		Account:   "user",
-		Algorithm: "SHA1",
-		Digits:    6,
-		Period:    30,
+		Algorithm: DefaultAlgorithm,
+		Digits:    DefaultDigits,
+		Period:    DefaultPeriod,
 	}
 	result := otp.Encode()
 
