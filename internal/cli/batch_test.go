@@ -68,3 +68,35 @@ func TestBatchNotesThatOutputFileIsIgnored(t *testing.T) {
 		t.Errorf("expected qr_0001.png: %v", err)
 	}
 }
+
+// Pins the summary line to the files: a --prefix with path components moves
+// the output, and the line used to keep naming --output-dir anyway.
+func TestBatchSummaryNamesTheDirectoryWritten(t *testing.T) {
+	dir := t.TempDir()
+	input := filepath.Join(dir, "in.txt")
+	if err := os.WriteFile(input, []byte("example.com\n"), 0o644); err != nil {
+		t.Fatalf("write input: %v", err)
+	}
+	out := filepath.Join(dir, "out")
+
+	origPrefix := batchPrefix
+	t.Cleanup(func() { batchPrefix = origPrefix })
+
+	var buf bytes.Buffer
+	cmd := GetRootCmd()
+	cmd.SetOut(&buf)
+	cmd.SetErr(&buf)
+	cmd.SetArgs([]string{"batch", input, "-O", out, "--prefix", "../escaped_"})
+	if err := cmd.Execute(); err != nil {
+		t.Fatalf("batch: %v", err)
+	}
+
+	written := filepath.Join(dir, "escaped_0001.png")
+	if _, err := os.Stat(written); err != nil {
+		t.Fatalf("expected %s: %v", written, err)
+	}
+	// The line must end at dir: "in <dir>" is also a prefix of "in <dir>/out".
+	if want := "Generated 1 QR codes in " + dir + "\n"; !strings.Contains(buf.String(), want) {
+		t.Errorf("summary lacks %q, output was:\n%s", want, buf.String())
+	}
+}

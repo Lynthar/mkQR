@@ -75,6 +75,13 @@ func runBatch(cmd *cobra.Command, args []string) error {
 	// base64 payload, and hitting the cap aborts the whole batch.
 	scanner.Buffer(make([]byte, 64*1024), 10*1024*1024)
 
+	// --prefix may carry path components, so files can land outside
+	// --output-dir; the summary must name where they actually went.
+	nameFor := func(line int) string {
+		return filepath.Join(batchOutputDir, fmt.Sprintf("%s%04d.png", batchPrefix, line))
+	}
+	writtenDir := filepath.Dir(nameFor(1))
+
 	count := 0
 	failed := 0
 	lineNum := 0
@@ -109,7 +116,7 @@ func runBatch(cmd *cobra.Command, args []string) error {
 
 		// PNG only (SVG batch output isn't wired up). The number is the input
 		// line, so every name points back at the line that produced it.
-		filename := filepath.Join(batchOutputDir, fmt.Sprintf("%s%04d.png", batchPrefix, lineNum))
+		filename := nameFor(lineNum)
 		if logoPath != "" {
 			if err := qr.SavePNGWithLogo(qrCode, filename, outputSize, qr.DefaultLogoOptions(logoPath)); err != nil {
 				cmd.PrintErrf("Error saving line %d: %v\n", lineNum, err)
@@ -136,7 +143,7 @@ func runBatch(cmd *cobra.Command, args []string) error {
 	}
 
 	if !quiet {
-		cmd.PrintErrf("\nGenerated %d QR codes in %s\n", count, batchOutputDir)
+		cmd.PrintErrf("\nGenerated %d QR codes in %s\n", count, writtenDir)
 	}
 
 	if failed > 0 {
