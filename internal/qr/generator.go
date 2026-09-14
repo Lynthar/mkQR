@@ -98,6 +98,13 @@ func (g *Generator) Generate(content string) (*qrcode.QRCode, error) {
 	return qr, nil
 }
 
+// MinPNGSize is the smallest pixel size the PNG renderer honors for qr: one
+// pixel per module plus the four-module quiet zone on each side (ISO 18004).
+// The renderer silently raises smaller sizes to it.
+func MinPNGSize(qr *qrcode.QRCode) int {
+	return 4*qr.VersionNumber + 17 + 2*4
+}
+
 // GeneratePNG generates a QR code and returns it as PNG bytes
 func (g *Generator) GeneratePNG(content string) ([]byte, error) {
 	qr, err := g.Generate(content)

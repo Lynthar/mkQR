@@ -77,7 +77,10 @@ func WritePNGWithLogo(qr *qrcode.QRCode, w io.Writer, size int, opts LogoOptions
 		return err
 	}
 
+	// Image raises size to MinPNGSize when asked for less; follow it, or the
+	// canvas below would crop the code to its top-left corner.
 	qrImg := qr.Image(size)
+	size = qrImg.Bounds().Dx()
 	logoSize := int(float64(size) * opts.SizeRatio)
 	if logoSize < 8 {
 		logoSize = 8

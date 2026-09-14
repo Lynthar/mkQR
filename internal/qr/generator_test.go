@@ -1,6 +1,7 @@
 package qr
 
 import (
+	"strings"
 	"testing"
 )
 
@@ -117,6 +118,21 @@ func TestErrorCorrectionLevelToQRCode(t *testing.T) {
 		result := tt.level.toQRCode()
 		if int(result) != tt.expected {
 			t.Errorf("ErrorCorrectionLevel(%v).toQRCode() = %v, want %v", tt.level, result, tt.expected)
+		}
+	}
+}
+
+// Pins MinPNGSize to the module grid the renderer actually draws, across
+// versions; the formula is only right while both agree.
+func TestMinPNGSizeMatchesBitmap(t *testing.T) {
+	gen := NewGenerator(DefaultOptions())
+	for _, content := range []string{"a", "https://example.com/some/path", strings.Repeat("x", 500)} {
+		qr, err := gen.Generate(content)
+		if err != nil {
+			t.Fatalf("Generate(%d bytes): %v", len(content), err)
+		}
+		if got, want := MinPNGSize(qr), len(qr.Bitmap()); got != want {
+			t.Errorf("MinPNGSize for version %d = %d, bitmap is %d", qr.VersionNumber, got, want)
 		}
 	}
 }

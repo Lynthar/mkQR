@@ -105,6 +105,8 @@ func runBatch(cmd *cobra.Command, args []string) error {
 			continue
 		}
 
+		noteSizeRaised(cmd.ErrOrStderr(), qrCode)
+
 		// PNG only (SVG batch output isn't wired up). The number is the input
 		// line, so every name points back at the line that produced it.
 		filename := filepath.Join(batchOutputDir, fmt.Sprintf("%s%04d.png", batchPrefix, lineNum))

@@ -10,6 +10,7 @@ import (
 
 	"github.com/Lynthar/mkQR/internal/qr"
 	"github.com/Lynthar/mkQR/pkg/encoder"
+	"github.com/skip2/go-qrcode"
 	"github.com/spf13/cobra"
 )
 
@@ -185,6 +186,14 @@ func buildGenerator(noteOut io.Writer) (*qr.Generator, error) {
 	return qr.NewGenerator(opts), nil
 }
 
+// noteSizeRaised tells the user when --size is below the module grid, which
+// the PNG renderer would otherwise round up to without a word.
+func noteSizeRaised(w io.Writer, qrCode *qrcode.QRCode) {
+	if minSize := qr.MinPNGSize(qrCode); outputSize < minSize && !quiet {
+		_, _ = fmt.Fprintf(w, "Note: --size %d is below the %d-pixel minimum for this code; using %d\n", outputSize, minSize, minSize)
+	}
+}
+
 // generateQR is the common QR generation logic
 func generateQR(content string) error {
 	gen, err := buildGenerator(os.Stderr)
@@ -198,6 +207,7 @@ func generateQR(content string) error {
 
 	// Output to stdout, file, or terminal
 	if outputFile == "-" {
+		noteSizeRaised(os.Stderr, qrCode)
 		if logoPath != "" {
 			return qr.WritePNGWithLogo(qrCode, os.Stdout, outputSize, qr.DefaultLogoOptions(logoPath))
 		}
@@ -222,6 +232,7 @@ func generateQR(content string) error {
 				return err
 			}
 		default: // FormatPNG
+			noteSizeRaised(os.Stderr, qrCode)
 			if logoPath != "" {
 				if err := qr.SavePNGWithLogo(qrCode, outputFile, outputSize, qr.DefaultLogoOptions(logoPath)); err != nil {
 					return err

@@ -184,3 +184,33 @@ func TestBoxResizeEmpty(t *testing.T) {
 		t.Errorf("Empty src should still produce sized dst")
 	}
 }
+
+// Pins the small-size path: the renderer raises size to the module grid, and
+// the logo canvas must follow — it used to crop the code to a size×size corner.
+func TestWritePNGWithLogoRaisesSizeToGrid(t *testing.T) {
+	gen := NewGenerator(Options{Level: LevelH, Size: 256})
+	qr, err := gen.Generate("small canvas")
+	if err != nil {
+		t.Fatalf("Generate() error: %v", err)
+	}
+	logoPath := filepath.Join(t.TempDir(), "logo.png")
+	var logoPNG bytes.Buffer
+	if err := png.Encode(&logoPNG, image.NewRGBA(image.Rect(0, 0, 8, 8))); err != nil {
+		t.Fatalf("encode logo: %v", err)
+	}
+	if err := os.WriteFile(logoPath, logoPNG.Bytes(), 0o644); err != nil {
+		t.Fatalf("write logo: %v", err)
+	}
+
+	var out bytes.Buffer
+	if err := WritePNGWithLogo(qr, &out, 10, DefaultLogoOptions(logoPath)); err != nil {
+		t.Fatalf("WritePNGWithLogo: %v", err)
+	}
+	decoded, err := png.Decode(&out)
+	if err != nil {
+		t.Fatalf("decode output: %v", err)
+	}
+	if got, want := decoded.Bounds().Dx(), MinPNGSize(qr); got != want {
+		t.Errorf("logo PNG at --size 10 is %d px wide, want the %d-module grid", got, want)
+	}
+}

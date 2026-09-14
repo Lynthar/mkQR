@@ -5,6 +5,7 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/spf13/cobra"
@@ -90,18 +91,18 @@ func TestSizeMustBePositiveOnEveryPath(t *testing.T) {
 	}
 }
 
-// captureStdout routes os.Stdout to a file until the test ends and returns a
-// function that reads back what was written.
-func captureStdout(t *testing.T) func() []byte {
+// captureStream routes *stream (os.Stdout or os.Stderr) to a file until the
+// test ends and returns a function that reads back what was written.
+func captureStream(t *testing.T, stream **os.File) func() []byte {
 	t.Helper()
-	path := filepath.Join(t.TempDir(), "stdout")
+	path := filepath.Join(t.TempDir(), "captured")
 	f, err := os.Create(path)
 	if err != nil {
 		t.Fatalf("create %s: %v", path, err)
 	}
-	orig := os.Stdout
-	os.Stdout = f
-	t.Cleanup(func() { os.Stdout = orig })
+	orig := *stream
+	*stream = f
+	t.Cleanup(func() { *stream = orig })
 	return func() []byte {
 		if err := f.Close(); err != nil {
 			t.Fatalf("close %s: %v", path, err)
@@ -144,7 +145,7 @@ func TestOutputDashWritesPNGToStdout(t *testing.T) {
 	} {
 		t.Run(tt.name, func(t *testing.T) {
 			logoPath = ""
-			read := captureStdout(t)
+			read := captureStream(t, &os.Stdout)
 
 			var buf bytes.Buffer
 			cmd := GetRootCmd()
@@ -171,6 +172,55 @@ func TestOutputDashWritesPNGToStdout(t *testing.T) {
 			}
 			if !bytes.Equal(got, wantBytes) {
 				t.Errorf("stdout PNG (%d bytes) differs from the file PNG (%d bytes)", len(got), len(wantBytes))
+			}
+		})
+	}
+}
+
+// Pins the small-size note on every PNG path: below the module grid the PNG is
+// raised to it (this used to happen silently), and SVG — which honors any size
+// — says nothing.
+func TestSizeBelowGridIsNotedOnPNGPaths(t *testing.T) {
+	input := filepath.Join(t.TempDir(), "in.txt")
+	if err := os.WriteFile(input, []byte("hello\n"), 0o644); err != nil {
+		t.Fatalf("write input: %v", err)
+	}
+	const note = "Note: --size 10 is below the 29-pixel minimum for this code; using 29"
+
+	origSize, origOut := outputSize, outputFile
+	t.Cleanup(func() { outputSize, outputFile = origSize, origOut })
+
+	for _, tt := range []struct {
+		name     string
+		args     []string
+		wantNote bool
+	}{
+		{"png file", []string{"text", "hi", "-o", "OUT/x.png", "--size", "10"}, true},
+		{"stdout", []string{"text", "hi", "-o", "-", "--size", "10"}, true},
+		{"batch", []string{"batch", input, "-O", "OUT", "--size", "10"}, true},
+		{"svg file", []string{"text", "hi", "-o", "OUT/x.svg", "--size", "10"}, false},
+	} {
+		t.Run(tt.name, func(t *testing.T) {
+			out := t.TempDir()
+			for i, a := range tt.args {
+				tt.args[i] = strings.Replace(a, "OUT", out, 1)
+			}
+			readErr := captureStream(t, &os.Stderr)
+			if tt.args[2] == "-" {
+				captureStream(t, &os.Stdout)
+			}
+
+			var buf bytes.Buffer
+			cmd := GetRootCmd()
+			cmd.SetOut(&buf)
+			cmd.SetErr(&buf)
+			cmd.SetArgs(tt.args)
+			if err := cmd.Execute(); err != nil {
+				t.Fatalf("%v: %v", tt.args, err)
+			}
+			all := buf.String() + string(readErr())
+			if got := strings.Contains(all, note); got != tt.wantNote {
+				t.Errorf("%v: note present = %v, want %v; output was:\n%s", tt.args, got, tt.wantNote, all)
 			}
 		})
 	}
