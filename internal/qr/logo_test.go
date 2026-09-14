@@ -17,11 +17,7 @@ func TestSavePNGWithLogo(t *testing.T) {
 		t.Fatalf("Generate() error: %v", err)
 	}
 
-	tmpDir, err := os.MkdirTemp("", "mkqr-logo-test-*")
-	if err != nil {
-		t.Fatalf("Failed to create temp dir: %v", err)
-	}
-	defer os.RemoveAll(tmpDir)
+	tmpDir := t.TempDir()
 
 	// Create a 32x32 solid red logo
 	logoPath := filepath.Join(tmpDir, "logo.png")
@@ -32,14 +28,13 @@ func TestSavePNGWithLogo(t *testing.T) {
 			logoImg.SetRGBA(x, y, red)
 		}
 	}
-	logoFile, err := os.Create(logoPath)
-	if err != nil {
-		t.Fatalf("Create logo: %v", err)
-	}
-	if err := png.Encode(logoFile, logoImg); err != nil {
+	var logoPNG bytes.Buffer
+	if err := png.Encode(&logoPNG, logoImg); err != nil {
 		t.Fatalf("Encode logo: %v", err)
 	}
-	logoFile.Close()
+	if err := os.WriteFile(logoPath, logoPNG.Bytes(), 0o644); err != nil {
+		t.Fatalf("Write logo: %v", err)
+	}
 
 	outPath := filepath.Join(tmpDir, "out.png")
 	if err := SavePNGWithLogo(qr, outPath, 256, DefaultLogoOptions(logoPath)); err != nil {
@@ -137,11 +132,7 @@ func TestSavePNGWithLogoHaloFollowsBackground(t *testing.T) {
 		t.Fatalf("Generate() error: %v", err)
 	}
 
-	tmpDir, err := os.MkdirTemp("", "mkqr-halo-*")
-	if err != nil {
-		t.Fatalf("mkdir temp: %v", err)
-	}
-	defer os.RemoveAll(tmpDir)
+	tmpDir := t.TempDir()
 
 	logoPath := filepath.Join(tmpDir, "logo.png")
 	logoImg := image.NewRGBA(image.Rect(0, 0, 20, 20))
@@ -151,14 +142,13 @@ func TestSavePNGWithLogoHaloFollowsBackground(t *testing.T) {
 			logoImg.SetRGBA(x, y, red)
 		}
 	}
-	f, err := os.Create(logoPath)
-	if err != nil {
-		t.Fatalf("create logo: %v", err)
-	}
-	if err := png.Encode(f, logoImg); err != nil {
+	var logoPNG bytes.Buffer
+	if err := png.Encode(&logoPNG, logoImg); err != nil {
 		t.Fatalf("encode logo: %v", err)
 	}
-	f.Close()
+	if err := os.WriteFile(logoPath, logoPNG.Bytes(), 0o644); err != nil {
+		t.Fatalf("write logo: %v", err)
+	}
 
 	outPath := filepath.Join(tmpDir, "out.png")
 	if err := SavePNGWithLogo(qr, outPath, 256, DefaultLogoOptions(logoPath)); err != nil {

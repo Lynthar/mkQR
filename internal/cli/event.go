@@ -50,8 +50,8 @@ func init() {
 	eventCmd.Flags().StringVar(&eventURL, "url", "", "URL associated with the event")
 	eventCmd.Flags().BoolVar(&eventAllDay, "all-day", false, "All-day event (DTSTART/DTEND emitted as dates)")
 
-	eventCmd.MarkFlagRequired("summary")
-	eventCmd.MarkFlagRequired("start")
+	must(eventCmd.MarkFlagRequired("summary"))
+	must(eventCmd.MarkFlagRequired("start"))
 
 	rootCmd.AddCommand(eventCmd)
 }
@@ -88,7 +88,7 @@ func runEvent(cmd *cobra.Command, args []string) error {
 		if eventAllDay {
 			display = start.Format("2006-01-02") + " (all-day)"
 		}
-		fmt.Fprintf(cmd.ErrOrStderr(), "Event: %s @ %s\n", eventSummary, display)
+		cmd.PrintErrf("Event: %s @ %s\n", eventSummary, display)
 	}
 
 	return generateQR(ev.Encode())

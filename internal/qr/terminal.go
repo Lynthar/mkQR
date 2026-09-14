@@ -1,7 +1,7 @@
 package qr
 
 import (
-	"bufio"
+	"bytes"
 	"fmt"
 	"io"
 	"strings"
@@ -15,22 +15,21 @@ type TerminalConfig struct {
 	Small  bool // Use half-block characters for compact output
 }
 
-// RenderTerminal renders a QR code to the terminal.
-//
-// Every write goes through a buffer whose first error is sticky; the returned
-// error is that one. Callers must not drop it — dropping it reports success on
-// a full disk or a closed pipe.
+// RenderTerminal renders a QR code to the terminal. The frame is built in
+// memory and written once; the returned error is that write's, and callers must
+// not drop it — dropping it reports success on a full disk or a closed pipe.
 func RenderTerminal(w io.Writer, qr *qrcode.QRCode, cfg TerminalConfig) error {
-	buffered := bufio.NewWriter(w)
+	var frame bytes.Buffer
 	bitmap := qr.Bitmap()
 
 	if cfg.Small {
-		renderSmall(buffered, bitmap, cfg.Invert)
+		renderSmall(&frame, bitmap, cfg.Invert)
 	} else {
-		renderNormal(buffered, bitmap, cfg.Invert)
+		renderNormal(&frame, bitmap, cfg.Invert)
 	}
 
-	return buffered.Flush()
+	_, err := frame.WriteTo(w)
+	return err
 }
 
 // renderNormal renders using full block characters (2 columns per QR module).
@@ -41,7 +40,7 @@ func RenderTerminal(w io.Writer, qr *qrcode.QRCode, cfg TerminalConfig) error {
 // look dark and bgPx=blocks makes QR background look light — the scannable
 // "dark modules on light" appearance. --invert swaps the pair for light
 // terminals.
-func renderNormal(w io.Writer, bitmap [][]bool, invert bool) {
+func renderNormal(w *bytes.Buffer, bitmap [][]bool, invert bool) {
 	modulePx := "  "
 	bgPx := "██"
 	if invert {
@@ -78,7 +77,7 @@ func renderNormal(w io.Writer, bitmap [][]bool, invert bool) {
 // is a QR module and should render dark, which on a dark terminal means the
 // "empty" (space-colored) half of the glyph. --invert flips that mapping for
 // light terminals.
-func renderSmall(w io.Writer, bitmap [][]bool, invert bool) {
+func renderSmall(w *bytes.Buffer, bitmap [][]bool, invert bool) {
 	const (
 		upperHalf  = "▀"
 		lowerHalf  = "▄"

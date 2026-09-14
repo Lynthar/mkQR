@@ -1,8 +1,6 @@
 package cli
 
 import (
-	"fmt"
-
 	"github.com/spf13/cobra"
 )
 
@@ -29,7 +27,7 @@ func runURL(cmd *cobra.Command, args []string) error {
 	url := ensureHTTPScheme(args[0])
 
 	if !quiet {
-		fmt.Fprintf(cmd.ErrOrStderr(), "URL: %s\n", url)
+		cmd.PrintErrf("URL: %s\n", url)
 	}
 
 	return generateQR(url)

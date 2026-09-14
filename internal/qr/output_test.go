@@ -36,12 +36,7 @@ func TestSavePNG(t *testing.T) {
 		t.Fatalf("Generate() error: %v", err)
 	}
 
-	// Create temp directory
-	tmpDir, err := os.MkdirTemp("", "mkqr-test-*")
-	if err != nil {
-		t.Fatalf("Failed to create temp dir: %v", err)
-	}
-	defer os.RemoveAll(tmpDir)
+	tmpDir := t.TempDir()
 
 	// Test saving to file
 	filename := filepath.Join(tmpDir, "test.png")

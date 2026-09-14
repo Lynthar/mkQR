@@ -50,7 +50,7 @@ func runBatch(cmd *cobra.Command, args []string) error {
 
 	// -o names a single file; batch names one file per line under --output-dir.
 	if outputFile != "" && !quiet {
-		fmt.Fprintln(cmd.ErrOrStderr(), "Note: batch writes PNG files into --output-dir; -o is ignored")
+		cmd.PrintErrln("Note: batch writes PNG files into --output-dir; -o is ignored")
 	}
 
 	// Create output directory
@@ -67,7 +67,7 @@ func runBatch(cmd *cobra.Command, args []string) error {
 		if err != nil {
 			return fmt.Errorf("failed to open input file: %w", err)
 		}
-		defer file.Close()
+		defer func() { _ = file.Close() }()
 		scanner = bufio.NewScanner(file)
 	}
 	// Raise the per-line cap from the default 64KB — a single vmess:// or
@@ -100,7 +100,7 @@ func runBatch(cmd *cobra.Command, args []string) error {
 		// Generate QR code
 		qrCode, err := gen.Generate(content)
 		if err != nil {
-			fmt.Fprintf(cmd.ErrOrStderr(), "Error on line %d: %v\n", lineNum, err)
+			cmd.PrintErrf("Error on line %d: %v\n", lineNum, err)
 			failed++
 			continue
 		}
@@ -110,20 +110,20 @@ func runBatch(cmd *cobra.Command, args []string) error {
 		filename := filepath.Join(batchOutputDir, fmt.Sprintf("%s%04d.png", batchPrefix, lineNum))
 		if logoPath != "" {
 			if err := qr.SavePNGWithLogo(qrCode, filename, outputSize, qr.DefaultLogoOptions(logoPath)); err != nil {
-				fmt.Fprintf(cmd.ErrOrStderr(), "Error saving line %d: %v\n", lineNum, err)
+				cmd.PrintErrf("Error saving line %d: %v\n", lineNum, err)
 				failed++
 				continue
 			}
 		} else {
 			if err := qr.SavePNG(qrCode, filename, outputSize); err != nil {
-				fmt.Fprintf(cmd.ErrOrStderr(), "Error saving line %d: %v\n", lineNum, err)
+				cmd.PrintErrf("Error saving line %d: %v\n", lineNum, err)
 				failed++
 				continue
 			}
 		}
 
 		if !quiet {
-			fmt.Fprintf(cmd.ErrOrStderr(), "[%d] %s -> %s\n", lineNum, previewOf(line, 40), filename)
+			cmd.PrintErrf("[%d] %s -> %s\n", lineNum, previewOf(line, 40), filename)
 		}
 
 		count++
@@ -134,7 +134,7 @@ func runBatch(cmd *cobra.Command, args []string) error {
 	}
 
 	if !quiet {
-		fmt.Fprintf(cmd.ErrOrStderr(), "\nGenerated %d QR codes in %s\n", count, batchOutputDir)
+		cmd.PrintErrf("\nGenerated %d QR codes in %s\n", count, batchOutputDir)
 	}
 
 	if failed > 0 {

@@ -47,11 +47,7 @@ func TestSaveSVG(t *testing.T) {
 		t.Fatalf("Generate() error: %v", err)
 	}
 
-	tmpDir, err := os.MkdirTemp("", "mkqr-svg-test-*")
-	if err != nil {
-		t.Fatalf("Failed to create temp dir: %v", err)
-	}
-	defer os.RemoveAll(tmpDir)
+	tmpDir := t.TempDir()
 
 	// Basic save
 	filename := filepath.Join(tmpDir, "test.svg")

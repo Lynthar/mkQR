@@ -1,8 +1,6 @@
 package cli
 
 import (
-	"fmt"
-
 	"github.com/Lynthar/mkQR/pkg/encoder"
 	"github.com/spf13/cobra"
 )
@@ -33,8 +31,8 @@ func init() {
 	// No short flag: `-q` is claimed by the root `--quiet` persistent flag.
 	geoCmd.Flags().StringVar(&geoQuery, "query", "", "Location name/query")
 
-	geoCmd.MarkFlagRequired("lat")
-	geoCmd.MarkFlagRequired("lng")
+	must(geoCmd.MarkFlagRequired("lat"))
+	must(geoCmd.MarkFlagRequired("lng"))
 
 	rootCmd.AddCommand(geoCmd)
 }
@@ -50,9 +48,9 @@ func runGeo(cmd *cobra.Command, args []string) error {
 
 	if !quiet {
 		if geoQuery != "" {
-			fmt.Fprintf(cmd.ErrOrStderr(), "Location: %s (%.4f, %.4f)\n", geoQuery, geoLat, geoLng)
+			cmd.PrintErrf("Location: %s (%.4f, %.4f)\n", geoQuery, geoLat, geoLng)
 		} else {
-			fmt.Fprintf(cmd.ErrOrStderr(), "Location: %.4f, %.4f\n", geoLat, geoLng)
+			cmd.PrintErrf("Location: %.4f, %.4f\n", geoLat, geoLng)
 		}
 	}
 

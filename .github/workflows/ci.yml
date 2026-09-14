@@ -35,11 +35,24 @@ jobs:
           go mod tidy
           git diff --exit-code go.mod go.sum
 
+      - name: Check gofmt
+        if: runner.os == 'Linux'
+        run: |
+          unformatted=$(gofmt -l .)
+          if [ -n "$unformatted" ]; then
+            echo "$unformatted"
+            exit 1
+          fi
+
       - name: Build
         run: go build -v ./...
 
       - name: Vet
         run: go vet ./...
+
+      - name: Check unhandled errors
+        if: runner.os == 'Linux'
+        run: go run github.com/kisielk/errcheck@v1.10.0 ./...
 
       - name: Test (with race detector)
         if: runner.os == 'Linux'

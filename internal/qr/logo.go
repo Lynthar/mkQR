@@ -1,6 +1,7 @@
 package qr
 
 import (
+	"bytes"
 	"fmt"
 	"image"
 	"image/color"
@@ -89,24 +90,22 @@ func SavePNGWithLogo(qr *qrcode.QRCode, filename string, size int, opts LogoOpti
 			return fmt.Errorf("failed to create directory: %w", err)
 		}
 	}
-	f, err := os.Create(filename)
-	if err != nil {
-		return fmt.Errorf("failed to create output file: %w", err)
-	}
-	defer f.Close()
-	if err := png.Encode(f, out); err != nil {
+	var buf bytes.Buffer
+	if err := png.Encode(&buf, out); err != nil {
 		return fmt.Errorf("failed to encode PNG: %w", err)
+	}
+	if err := os.WriteFile(filename, buf.Bytes(), 0644); err != nil {
+		return fmt.Errorf("failed to write PNG file: %w", err)
 	}
 	return nil
 }
 
 func loadImage(path string) (image.Image, error) {
-	f, err := os.Open(path)
+	data, err := os.ReadFile(path)
 	if err != nil {
 		return nil, fmt.Errorf("failed to open logo: %w", err)
 	}
-	defer f.Close()
-	img, _, err := image.Decode(f)
+	img, _, err := image.Decode(bytes.NewReader(data))
 	if err != nil {
 		return nil, fmt.Errorf("failed to decode logo (supported: PNG, JPEG, GIF): %w", err)
 	}

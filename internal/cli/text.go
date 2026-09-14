@@ -1,8 +1,6 @@
 package cli
 
 import (
-	"fmt"
-
 	"github.com/spf13/cobra"
 )
 
@@ -30,7 +28,7 @@ func runText(cmd *cobra.Command, args []string) error {
 	content := args[0]
 
 	if !quiet {
-		fmt.Fprintf(cmd.ErrOrStderr(), "Text: %s\n", previewOf(content, 50))
+		cmd.PrintErrf("Text: %s\n", previewOf(content, 50))
 	}
 
 	return generateQR(content)

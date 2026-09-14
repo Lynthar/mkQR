@@ -128,6 +128,15 @@ func ensureHTTPScheme(s string) string {
 	return "https://" + s
 }
 
+// must panics on err. It guards init-time wiring such as MarkFlagRequired,
+// where an error means a misspelled flag name — a programmer error that would
+// otherwise silently drop the "required" check.
+func must(err error) {
+	if err != nil {
+		panic(err)
+	}
+}
+
 // previewOf shortens s for a notice line, cutting on rune boundaries so
 // multi-byte text (e.g. CJK) is never sliced mid-character.
 func previewOf(s string, limit int) string {
@@ -152,7 +161,7 @@ func buildGenerator(noteOut io.Writer) (*qr.Generator, error) {
 	}
 	if logoPath != "" && level != qr.LevelH {
 		if !quiet {
-			fmt.Fprintln(noteOut, "Note: forcing error correction level H for logo embedding")
+			_, _ = fmt.Fprintln(noteOut, "Note: forcing error correction level H for logo embedding")
 		}
 		level = qr.LevelH
 	}

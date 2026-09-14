@@ -1,8 +1,6 @@
 package cli
 
 import (
-	"fmt"
-
 	"github.com/Lynthar/mkQR/pkg/encoder"
 	"github.com/spf13/cobra"
 )
@@ -38,7 +36,7 @@ func init() {
 	wifiCmd.Flags().StringVarP(&wifiEncryption, "encryption", "e", "", "Encryption type (WPA/WEP/nopass)")
 	wifiCmd.Flags().BoolVarP(&wifiHidden, "hidden", "H", false, "Hidden network")
 
-	wifiCmd.MarkFlagRequired("ssid")
+	must(wifiCmd.MarkFlagRequired("ssid"))
 
 	rootCmd.AddCommand(wifiCmd)
 }
@@ -59,7 +57,7 @@ func runWifi(cmd *cobra.Command, args []string) error {
 	content := wifi.Encode()
 
 	if !quiet {
-		fmt.Fprintf(cmd.ErrOrStderr(), "WiFi: %s (%s)\n", wifiSSID, wifi.EffectiveEncryption())
+		cmd.PrintErrf("WiFi: %s (%s)\n", wifiSSID, wifi.EffectiveEncryption())
 	}
 
 	return generateQR(content)

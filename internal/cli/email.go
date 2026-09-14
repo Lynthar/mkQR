@@ -1,8 +1,6 @@
 package cli
 
 import (
-	"fmt"
-
 	"github.com/Lynthar/mkQR/pkg/encoder"
 	"github.com/spf13/cobra"
 )
@@ -49,7 +47,7 @@ func runEmail(cmd *cobra.Command, args []string) error {
 	content := email.Encode()
 
 	if !quiet {
-		fmt.Fprintf(cmd.ErrOrStderr(), "Email: %s\n", args[0])
+		cmd.PrintErrf("Email: %s\n", args[0])
 	}
 
 	return generateQR(content)

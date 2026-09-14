@@ -1,8 +1,6 @@
 package cli
 
 import (
-	"fmt"
-
 	"github.com/Lynthar/mkQR/pkg/encoder"
 	"github.com/spf13/cobra"
 )
@@ -32,7 +30,7 @@ func runPhone(cmd *cobra.Command, args []string) error {
 	content := phone.Encode()
 
 	if !quiet {
-		fmt.Fprintf(cmd.ErrOrStderr(), "Phone: %s\n", args[0])
+		cmd.PrintErrf("Phone: %s\n", args[0])
 	}
 
 	return generateQR(content)

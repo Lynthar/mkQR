@@ -16,7 +16,9 @@ func TestRootWithUnstattableStdinShowsHelp(t *testing.T) {
 	if err != nil {
 		t.Fatalf("open %s: %v", os.DevNull, err)
 	}
-	f.Close()
+	if err := f.Close(); err != nil {
+		t.Fatalf("close %s: %v", os.DevNull, err)
+	}
 
 	orig := os.Stdin
 	os.Stdin = f
@@ -53,7 +55,7 @@ func silenceStderr(t *testing.T) {
 	os.Stderr = null
 	t.Cleanup(func() {
 		os.Stderr = orig
-		null.Close()
+		_ = null.Close()
 	})
 }
 

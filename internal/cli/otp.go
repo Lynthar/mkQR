@@ -43,9 +43,9 @@ func init() {
 	otpCmd.Flags().IntVar(&otpCounter, "counter", 0, "Initial counter value (HOTP)")
 	otpCmd.Flags().BoolVar(&otpTypeHOTP, "hotp", false, "Use HOTP (counter-based) instead of TOTP")
 
-	otpCmd.MarkFlagRequired("secret")
-	otpCmd.MarkFlagRequired("issuer")
-	otpCmd.MarkFlagRequired("account")
+	must(otpCmd.MarkFlagRequired("secret"))
+	must(otpCmd.MarkFlagRequired("issuer"))
+	must(otpCmd.MarkFlagRequired("account"))
 
 	rootCmd.AddCommand(otpCmd)
 }
@@ -91,7 +91,7 @@ func runOTP(cmd *cobra.Command, args []string) error {
 	content := otp.Encode()
 
 	if !quiet {
-		fmt.Fprintf(cmd.ErrOrStderr(), "OTP: %s (%s)\n", otpIssuer, otpAccount)
+		cmd.PrintErrf("OTP: %s (%s)\n", otpIssuer, otpAccount)
 	}
 
 	return generateQR(content)

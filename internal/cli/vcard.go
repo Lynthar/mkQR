@@ -82,7 +82,7 @@ func runVCard(cmd *cobra.Command, args []string) error {
 		if name == "" {
 			name = vcardEmail // fallback to email if no name
 		}
-		fmt.Fprintf(cmd.ErrOrStderr(), "Contact: %s\n", name)
+		cmd.PrintErrf("Contact: %s\n", name)
 	}
 
 	return generateQR(content)
