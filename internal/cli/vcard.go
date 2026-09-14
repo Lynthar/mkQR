@@ -1,6 +1,7 @@
 package cli
 
 import (
+	"cmp"
 	"fmt"
 
 	"github.com/Lynthar/mkQR/pkg/encoder"
@@ -78,11 +79,8 @@ func runVCard(cmd *cobra.Command, args []string) error {
 	content := vcard.Encode()
 
 	if !quiet {
-		name := vcard.FormattedName()
-		if name == "" {
-			name = vcardEmail // fallback to email if no name
-		}
-		cmd.PrintErrf("Contact: %s\n", name)
+		// Every field the guard above accepts must be in this chain, or the line prints empty.
+		cmd.PrintErrf("Contact: %s\n", cmp.Or(vcard.FormattedName(), vcardEmail, vcardPhone))
 	}
 
 	return generateQR(content)

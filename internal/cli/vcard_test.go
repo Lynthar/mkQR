@@ -7,8 +7,8 @@ import (
 	"testing"
 )
 
-// Pins the "Contact:" notice: the vCard FN when any name is given, the email
-// otherwise.
+// Pins the "Contact:" notice: the vCard FN when any name is given, else the
+// email, else the phone -- whatever the command actually has.
 func TestVCardNoticeShowsName(t *testing.T) {
 	tests := []struct {
 		name string
@@ -19,17 +19,18 @@ func TestVCardNoticeShowsName(t *testing.T) {
 		{"first only", []string{"-f", "John"}, "Contact: John"},
 		{"last only", []string{"--last", "Doe"}, "Contact: Doe"},
 		{"email only", []string{"-e", "jane@example.com"}, "Contact: jane@example.com"},
+		{"phone only", []string{"-p", "+123"}, "Contact: +123"},
 	}
 
-	origFirst, origLast, origEmail, origOut := vcardFirstName, vcardLastName, vcardEmail, outputFile
+	origFirst, origLast, origEmail, origPhone, origOut := vcardFirstName, vcardLastName, vcardEmail, vcardPhone, outputFile
 	t.Cleanup(func() {
-		vcardFirstName, vcardLastName, vcardEmail, outputFile = origFirst, origLast, origEmail, origOut
+		vcardFirstName, vcardLastName, vcardEmail, vcardPhone, outputFile = origFirst, origLast, origEmail, origPhone, origOut
 	})
 	silenceStderr(t)
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			vcardFirstName, vcardLastName, vcardEmail = "", "", ""
+			vcardFirstName, vcardLastName, vcardEmail, vcardPhone = "", "", "", ""
 			out := filepath.Join(t.TempDir(), "got.png")
 
 			var buf bytes.Buffer
