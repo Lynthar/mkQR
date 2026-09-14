@@ -47,6 +47,7 @@ Examples:
   mkqr wifi -s "MyNetwork" -p "pass"     # WiFi network
   mkqr "vmess://..." -o proxy.png        # Save proxy QR to PNG
   mkqr "text" -o qr.svg                  # Save as scalable SVG
+  mkqr "text" -o - > qr.png              # PNG on stdout
   mkqr "url" --logo logo.png -o brand.png # Embed logo at center
   echo "text" | mkqr                     # Read from stdin`,
 	Args: cobra.MaximumNArgs(1),
@@ -59,7 +60,7 @@ Examples:
 
 func init() {
 	// Global flags
-	rootCmd.PersistentFlags().StringVarP(&outputFile, "output", "o", "", "Output file (.png or .svg)")
+	rootCmd.PersistentFlags().StringVarP(&outputFile, "output", "o", "", "Output file (.png or .svg; - writes PNG to stdout)")
 	rootCmd.PersistentFlags().IntVar(&outputSize, "size", 256, "QR code size in pixels")
 	rootCmd.PersistentFlags().StringVarP(&errorLevel, "level", "l", "M", "Error correction level (L/M/Q/H)")
 	rootCmd.PersistentFlags().StringVar(&logoPath, "logo", "", "Embed image at QR center (PNG/JPEG/GIF; PNG output only; forces level H)")
@@ -195,7 +196,13 @@ func generateQR(content string) error {
 		return err
 	}
 
-	// Output to file or terminal
+	// Output to stdout, file, or terminal
+	if outputFile == "-" {
+		if logoPath != "" {
+			return qr.WritePNGWithLogo(qrCode, os.Stdout, outputSize, qr.DefaultLogoOptions(logoPath))
+		}
+		return qr.WritePNG(qrCode, os.Stdout, outputSize)
+	}
 	if outputFile != "" {
 		// Reject extensions we don't actually support, rather than silently
 		// producing a PNG named `foo.jpg`. Empty extension (`-o qr`) is OK

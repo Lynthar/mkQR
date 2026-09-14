@@ -2,6 +2,7 @@ package cli
 
 import (
 	"bytes"
+	"io"
 	"os"
 	"path/filepath"
 	"testing"
@@ -84,6 +85,92 @@ func TestSizeMustBePositiveOnEveryPath(t *testing.T) {
 			err := cmd.Execute()
 			if err == nil || err.Error() != want {
 				t.Errorf("%v returned %v, want %q", args, err, want)
+			}
+		})
+	}
+}
+
+// captureStdout routes os.Stdout to a file until the test ends and returns a
+// function that reads back what was written.
+func captureStdout(t *testing.T) func() []byte {
+	t.Helper()
+	path := filepath.Join(t.TempDir(), "stdout")
+	f, err := os.Create(path)
+	if err != nil {
+		t.Fatalf("create %s: %v", path, err)
+	}
+	orig := os.Stdout
+	os.Stdout = f
+	t.Cleanup(func() { os.Stdout = orig })
+	return func() []byte {
+		if err := f.Close(); err != nil {
+			t.Fatalf("close %s: %v", path, err)
+		}
+		data, err := os.ReadFile(path)
+		if err != nil {
+			t.Fatalf("read %s: %v", path, err)
+		}
+		return data
+	}
+}
+
+// Pins `-o -`: the PNG goes to stdout, byte for byte what `-o file.png` writes,
+// with and without --logo. It used to create a file literally named "-".
+func TestOutputDashWritesPNGToStdout(t *testing.T) {
+	gen, err := buildGenerator(io.Discard)
+	if err != nil {
+		t.Fatalf("buildGenerator: %v", err)
+	}
+	// Any PNG serves as a logo; a QR of its own is the cheapest one at hand.
+	logoPNG, err := gen.GeneratePNG("logo")
+	if err != nil {
+		t.Fatalf("GeneratePNG: %v", err)
+	}
+	logo := filepath.Join(t.TempDir(), "logo.png")
+	if err := os.WriteFile(logo, logoPNG, 0o644); err != nil {
+		t.Fatalf("write logo: %v", err)
+	}
+
+	origOut, origLogo := outputFile, logoPath
+	t.Cleanup(func() { outputFile, logoPath = origOut, origLogo })
+	silenceStderr(t)
+
+	for _, tt := range []struct {
+		name string
+		args []string
+	}{
+		{"plain", nil},
+		{"logo", []string{"--logo", logo}},
+	} {
+		t.Run(tt.name, func(t *testing.T) {
+			logoPath = ""
+			read := captureStdout(t)
+
+			var buf bytes.Buffer
+			cmd := GetRootCmd()
+			cmd.SetOut(&buf)
+			cmd.SetErr(&buf)
+			cmd.SetArgs(append([]string{"text", "hi", "-o", "-"}, tt.args...))
+			if err := cmd.Execute(); err != nil {
+				t.Fatalf("text -o - %v: %v", tt.args, err)
+			}
+			got := read()
+			if _, err := os.Stat("-"); err == nil {
+				_ = os.Remove("-")
+				t.Error("-o - created a file named \"-\"")
+			}
+
+			want := filepath.Join(t.TempDir(), "want.png")
+			cmd.SetArgs(append([]string{"text", "hi", "-o", want}, tt.args...))
+			if err := cmd.Execute(); err != nil {
+				t.Fatalf("text -o file %v: %v", tt.args, err)
+			}
+			wantBytes, err := os.ReadFile(want)
+			if err != nil {
+				t.Fatalf("read %s: %v", want, err)
+			}
+			if !bytes.Equal(got, wantBytes) {
+				t.Errorf("stdout PNG (%d bytes) differs from the file PNG (%d bytes)", len(got), len(wantBytes))
 			}
 		})
 	}

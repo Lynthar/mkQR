@@ -3,6 +3,7 @@ package qr
 import (
 	"encoding/base64"
 	"fmt"
+	"io"
 	"os"
 	"path/filepath"
 	"strings"
@@ -31,6 +32,14 @@ func DetectFormat(filename string) OutputFormat {
 	default:
 		return FormatPNG // Default to PNG for files
 	}
+}
+
+// WritePNG writes the QR code as PNG to w.
+func WritePNG(qr *qrcode.QRCode, w io.Writer, size int) error {
+	if err := qr.Write(size, w); err != nil {
+		return fmt.Errorf("failed to write PNG: %w", err)
+	}
+	return nil
 }
 
 // SavePNG saves the QR code as a PNG file

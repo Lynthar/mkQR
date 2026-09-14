@@ -9,6 +9,7 @@ import (
 	_ "image/gif"  // register GIF decoder
 	_ "image/jpeg" // register JPEG decoder
 	"image/png"
+	"io"
 	"os"
 	"path/filepath"
 
@@ -35,10 +36,29 @@ func DefaultLogoOptions(logoPath string) LogoOptions {
 	}
 }
 
-// SavePNGWithLogo writes the QR code as a PNG with a logo composited at center.
-// The caller should generate the QR code with error correction level H so the
-// masked modules can still be recovered during scanning.
+// SavePNGWithLogo writes the QR code as a PNG file with a logo composited at
+// center; see WritePNGWithLogo.
 func SavePNGWithLogo(qr *qrcode.QRCode, filename string, size int, opts LogoOptions) error {
+	var buf bytes.Buffer
+	if err := WritePNGWithLogo(qr, &buf, size, opts); err != nil {
+		return err
+	}
+	dir := filepath.Dir(filename)
+	if dir != "." && dir != "" {
+		if err := os.MkdirAll(dir, 0755); err != nil {
+			return fmt.Errorf("failed to create directory: %w", err)
+		}
+	}
+	if err := os.WriteFile(filename, buf.Bytes(), 0644); err != nil {
+		return fmt.Errorf("failed to write PNG file: %w", err)
+	}
+	return nil
+}
+
+// WritePNGWithLogo writes the QR code as PNG to w with a logo composited at
+// center. The caller should generate the QR code with error correction level H
+// so the masked modules can still be recovered during scanning.
+func WritePNGWithLogo(qr *qrcode.QRCode, w io.Writer, size int, opts LogoOptions) error {
 	if opts.LogoPath == "" {
 		return fmt.Errorf("logo path is required")
 	}
@@ -84,18 +104,8 @@ func SavePNGWithLogo(qr *qrcode.QRCode, filename string, size int, opts LogoOpti
 	logoRect := centeredRect(size, logoSize)
 	draw.Draw(out, logoRect, resized, image.Point{}, draw.Over)
 
-	dir := filepath.Dir(filename)
-	if dir != "." && dir != "" {
-		if err := os.MkdirAll(dir, 0755); err != nil {
-			return fmt.Errorf("failed to create directory: %w", err)
-		}
-	}
-	var buf bytes.Buffer
-	if err := png.Encode(&buf, out); err != nil {
+	if err := png.Encode(w, out); err != nil {
 		return fmt.Errorf("failed to encode PNG: %w", err)
-	}
-	if err := os.WriteFile(filename, buf.Bytes(), 0644); err != nil {
-		return fmt.Errorf("failed to write PNG file: %w", err)
 	}
 	return nil
 }

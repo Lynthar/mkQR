@@ -63,6 +63,7 @@ mkqr event -s "Sync" --start 2026-05-01T10:00:00Z --end 2026-05-01T11:00:00Z
 
 ```bash
 mkqr "hello" -o qr.svg
+mkqr "hello" -o - > qr.png            # PNG 写到 stdout
 mkqr "hello" -o qr.png --logo logo.png --fg blue
 mkqr batch urls.txt -O ./out/ --prefix "node_"
 ```

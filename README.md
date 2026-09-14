@@ -66,6 +66,7 @@ mode reads one payload per line and writes numbered PNGs:
 
 ```bash
 mkqr "hello" -o qr.svg
+mkqr "hello" -o - > qr.png            # PNG on stdout
 mkqr "hello" -o qr.png --logo logo.png --fg blue
 mkqr batch urls.txt -O ./out/ --prefix "node_"
 ```
