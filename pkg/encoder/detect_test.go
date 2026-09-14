@@ -75,10 +75,10 @@ func TestDetect(t *testing.T) {
 		{"192.168.1.1", TypeText},
 		{"1.2.3", TypeText},
 		// Rejected URL-ish inputs
-		{"example.c", TypeText},      // TLD must be ≥2 letters
-		{"example.123", TypeText},    // TLD must be alphabetic
+		{"example.c", TypeText},       // TLD must be ≥2 letters
+		{"example.123", TypeText},     // TLD must be alphabetic
 		{"example.com:abc", TypeText}, // port must be digits
-		{".example.com", TypeText},   // leading dot (no label before it)
+		{".example.com", TypeText},    // leading dot (no label before it)
 	}
 
 	for _, tt := range tests {

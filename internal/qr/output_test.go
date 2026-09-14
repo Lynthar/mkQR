@@ -15,8 +15,8 @@ func TestDetectFormat(t *testing.T) {
 		{"output.PNG", FormatPNG},
 		{"path/to/file.png", FormatPNG},
 		{"output.jpg", FormatPNG},  // defaults to PNG
-		{"output", FormatPNG},       // defaults to PNG
-		{"output.jpeg", FormatPNG},  // defaults to PNG
+		{"output", FormatPNG},      // defaults to PNG
+		{"output.jpeg", FormatPNG}, // defaults to PNG
 	}
 
 	for _, tt := range tests {

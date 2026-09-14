@@ -170,12 +170,12 @@ func TestValidateSecret(t *testing.T) {
 		{"JBSWY3DPEHPK3PXP", false},
 		{"ABCD2345", false},
 		{"abcd2345", false},
-		{"ABCD 2345", false},       // spaces allowed (removed)
-		{"ABCD-2345-EFGH", false},  // hyphens allowed (removed)
-		{"", true},                 // empty
-		{"ABCD1890", true},         // invalid chars (1, 8, 9, 0)
-		{"ABCD!@#$", true},         // special chars
-		{"12345678", true},         // all invalid digits
+		{"ABCD 2345", false},      // spaces allowed (removed)
+		{"ABCD-2345-EFGH", false}, // hyphens allowed (removed)
+		{"", true},                // empty
+		{"ABCD1890", true},        // invalid chars (1, 8, 9, 0)
+		{"ABCD!@#$", true},        // special chars
+		{"12345678", true},        // all invalid digits
 	}
 
 	for _, tt := range tests {
